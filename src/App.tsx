@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { getBranches, getFiles } from "./api";
 import { FileTree } from "./components/Sidebar/FileTree";
 import { useDiff } from "./hooks/useDiff";
+import { useComments } from "./hooks/useComments";
 import { DiffView } from "./components/DiffView/DiffView";
 
 export function App() {
@@ -12,6 +13,7 @@ export function App() {
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
+  const { comments, addComment, resolveComment, reopenComment, removeComment } = useComments(base, head);
 
   useEffect(() => {
     getBranches().then(({ branches, current }) => {
@@ -31,6 +33,9 @@ export function App() {
       setFiles([]);
     }
   }, [base, head]);
+
+  // suppress unused variable warning — current is set but only used for initial head state
+  void current;
 
   return (
     <>
@@ -77,6 +82,11 @@ export function App() {
               headCommit={headCommit}
               base={base}
               head={head}
+              comments={comments}
+              onAddComment={addComment}
+              onResolve={resolveComment}
+              onReopen={reopenComment}
+              onDelete={removeComment}
             />
           )
         ) : (

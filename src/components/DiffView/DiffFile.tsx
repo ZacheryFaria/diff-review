@@ -1,8 +1,12 @@
-import { Diff, Hunk, tokenize, markEdits } from "react-diff-view";
+import { useState, type ReactNode } from "react";
+import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const refractor = require("refractor") as { highlight: (code: string, language: string) => unknown };
-import type { FileData } from "react-diff-view";
+import type { FileData, HunkData, ChangeData } from "react-diff-view";
+import type { Comment } from "../../types/schema";
+import { CommentWidget } from "./CommentWidget";
+import { CommentInput } from "../CommentInput";
 
 function getLanguage(fileName: string): string {
   const ext = fileName.split(".").pop() ?? "";
@@ -27,15 +31,92 @@ function getLanguage(fileName: string): string {
   return map[ext] ?? "text";
 }
 
+interface PendingComment {
+  file: string;
+  line: number;
+  side: "old" | "new";
+}
+
 interface DiffFileProps {
   fileData: FileData;
   viewType: "unified" | "split";
+  comments: Comment[];
+  onAddComment: (data: { file: string; startLine: number; endLine: number; side: "old" | "new"; body: string }) => Promise<void>;
+  onResolve: (id: string) => void;
+  onReopen: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function DiffFile({ fileData, viewType }: DiffFileProps) {
-  const { oldRevision, newRevision, type, hunks, oldPath, newPath } = fileData;
+function findChangeForLine(
+  allChanges: ChangeData[],
+  line: number,
+  side: "old" | "new"
+): ChangeData | undefined {
+  return allChanges.find(c => {
+    if (side === "new") {
+      return (c.type === "insert" && (c as { lineNumber: number }).lineNumber === line) ||
+             (c.type === "normal" && (c as { newLineNumber: number }).newLineNumber === line);
+    } else {
+      return (c.type === "delete" && (c as { lineNumber: number }).lineNumber === line) ||
+             (c.type === "normal" && (c as { oldLineNumber: number }).oldLineNumber === line);
+    }
+  });
+}
+
+function buildWidgets(
+  hunks: HunkData[],
+  fileComments: Comment[],
+  pendingComment: PendingComment | null,
+  onSubmit: (body: string) => void,
+  onCancel: () => void,
+  onResolve: (id: string) => void,
+  onReopen: (id: string) => void,
+  onDelete: (id: string) => void
+): Record<string, ReactNode> {
+  const widgets: Record<string, ReactNode> = {};
+  const allChanges = hunks.flatMap(h => h.changes);
+
+  for (const comment of fileComments) {
+    const change = findChangeForLine(allChanges, comment.endLine, comment.side);
+    if (change) {
+      const key = getChangeKey(change);
+      const existing = widgets[key];
+      widgets[key] = (
+        <div>
+          {existing}
+          <CommentWidget
+            comment={comment}
+            onResolve={onResolve}
+            onReopen={onReopen}
+            onDelete={onDelete}
+          />
+        </div>
+      );
+    }
+  }
+
+  if (pendingComment) {
+    const change = findChangeForLine(allChanges, pendingComment.line, pendingComment.side);
+    if (change) {
+      const key = getChangeKey(change);
+      const existing = widgets[key];
+      widgets[key] = (
+        <div>
+          {existing}
+          <CommentInput onSubmit={onSubmit} onCancel={onCancel} />
+        </div>
+      );
+    }
+  }
+
+  return widgets;
+}
+
+export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete }: DiffFileProps) {
+  const { type, hunks, oldPath, newPath } = fileData;
   const fileName = newPath || oldPath || "unknown";
   const language = getLanguage(fileName);
+  const [pendingComment, setPendingComment] = useState<PendingComment | null>(null);
 
   let tokens;
   try {
@@ -48,6 +129,46 @@ export function DiffFile({ fileData, viewType }: DiffFileProps) {
   } catch {
     tokens = undefined;
   }
+
+  const handleGutterClick = ({ change, side }: { change: ChangeData | null; side?: "old" | "new" }) => {
+    if (!change) return;
+    const side_ = side ?? (change.type === "delete" ? "old" : "new");
+    let line: number;
+    if (change.type === "insert" || change.type === "delete") {
+      line = (change as { lineNumber: number }).lineNumber;
+    } else {
+      line = side_ === "old"
+        ? (change as { oldLineNumber: number }).oldLineNumber
+        : (change as { newLineNumber: number }).newLineNumber;
+    }
+    if (!line) return;
+    setPendingComment({ file: fileName, line, side: side_ });
+  };
+
+  const handleSubmit = async (body: string) => {
+    if (!pendingComment) return;
+    await onAddComment({
+      file: pendingComment.file,
+      startLine: pendingComment.line,
+      endLine: pendingComment.line,
+      side: pendingComment.side,
+      body,
+    });
+    setPendingComment(null);
+  };
+
+  const handleCancel = () => setPendingComment(null);
+
+  const widgets = buildWidgets(
+    hunks,
+    comments,
+    pendingComment,
+    handleSubmit,
+    handleCancel,
+    onResolve,
+    onReopen,
+    onDelete
+  );
 
   return (
     <div
@@ -77,6 +198,8 @@ export function DiffFile({ fileData, viewType }: DiffFileProps) {
           diffType={type}
           hunks={hunks}
           tokens={tokens ?? null}
+          widgets={widgets}
+          gutterEvents={{ onClick: handleGutterClick }}
         >
           {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}
         </Diff>

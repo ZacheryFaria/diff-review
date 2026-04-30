@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { parseDiff } from "react-diff-view";
 import { DiffFile } from "./DiffFile";
+import type { Comment } from "../../types/schema";
 
 interface DiffViewProps {
   diffText: string;
@@ -8,11 +9,22 @@ interface DiffViewProps {
   headCommit: string;
   base: string;
   head: string;
+  comments: Comment[];
+  onAddComment: (data: { file: string; startLine: number; endLine: number; side: "old" | "new"; body: string }) => Promise<void>;
+  onResolve: (id: string) => void;
+  onReopen: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
-export function DiffView({ diffText, baseCommit, headCommit, base, head }: DiffViewProps) {
+export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete }: DiffViewProps) {
   const [viewType, setViewType] = useState<"unified" | "split">("split");
   const files = parseDiff(diffText, { nearbySequences: "zip" });
+
+  // suppress unused variable warnings for baseCommit/headCommit (used by parent for display)
+  void baseCommit;
+  void headCommit;
+  void base;
+  void head;
 
   return (
     <div>
@@ -60,13 +72,22 @@ export function DiffView({ diffText, baseCommit, headCommit, base, head }: DiffV
           </button>
         </div>
       </div>
-      {files.map(file => (
-        <DiffFile
-          key={`${file.oldRevision}-${file.newRevision}`}
-          fileData={file}
-          viewType={viewType}
-        />
-      ))}
+      {files.map(file => {
+        const fileName = file.newPath || file.oldPath || "unknown";
+        const fileComments = comments.filter(c => c.file === fileName);
+        return (
+          <DiffFile
+            key={`${file.oldRevision}-${file.newRevision}`}
+            fileData={file}
+            viewType={viewType}
+            comments={fileComments}
+            onAddComment={onAddComment}
+            onResolve={onResolve}
+            onReopen={onReopen}
+            onDelete={onDelete}
+          />
+        );
+      })}
     </div>
   );
 }
