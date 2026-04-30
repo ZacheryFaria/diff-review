@@ -89,12 +89,31 @@ body {
 table.diff {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table.diff colgroup {
+  width: 50%;
 }
 
 .diff td {
   padding: 0 8px;
   border: none;
   vertical-align: top;
+}
+
+/* Split view: visual divider between old and new sides.
+   In split mode each <tr> has 4 cells: old-gutter, old-code, new-gutter, new-code.
+   Target the 3rd cell (new-gutter) for the left border divider. */
+.diff-split tr td:nth-child(3) {
+  border-left: 3px solid var(--border);
+}
+
+/* Increase gutter clickable area and visual weight */
+.diff-gutter {
+  padding-left: 8px !important;
+  padding-right: 4px !important;
+  user-select: none;
 }
 
 .diff-widget {
