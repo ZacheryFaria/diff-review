@@ -55,13 +55,13 @@
         },
         "startLine": {
           "type": "integer",
-          "minimum": 1,
-          "description": "Start line number in the file version indicated by side"
+          "minimum": 0,
+          "description": "Start line number in the file version indicated by side. 0 means a file-level comment"
         },
         "endLine": {
           "type": "integer",
-          "minimum": 1,
-          "description": "End line number (inclusive). Same as startLine for single-line comments"
+          "minimum": 0,
+          "description": "End line number (inclusive). Same as startLine for single-line comments. 0 means a file-level comment"
         },
         "side": {
           "type": "string",

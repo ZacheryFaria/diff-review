@@ -118,6 +118,12 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
   const fileName = newPath || oldPath || "unknown";
   const language = getLanguage(fileName);
   const [pendingComment, setPendingComment] = useState<PendingComment | null>(null);
+  const [showFileCommentInput, setShowFileCommentInput] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [reviewed, setReviewed] = useState(false);
+
+  const fileLevelComments = comments.filter(c => c.startLine === 0);
+  const lineLevelComments = comments.filter(c => c.startLine !== 0);
 
   let tokens;
   try {
@@ -160,9 +166,16 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
 
   const handleCancel = () => setPendingComment(null);
 
+  const handleFileCommentSubmit = async (body: string) => {
+    await onAddComment({ file: fileName, startLine: 0, endLine: 0, side: "new", body });
+    setShowFileCommentInput(false);
+  };
+
+  const handleFileCommentCancel = () => setShowFileCommentInput(false);
+
   const widgets = buildWidgets(
     hunks,
-    comments,
+    lineLevelComments,
     pendingComment,
     handleSubmit,
     handleCancel,
@@ -170,6 +183,13 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
     onReopen,
     onDelete
   );
+
+  const handleReviewedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    const checked = e.target.checked;
+    setReviewed(checked);
+    if (checked) setCollapsed(true);
+  };
 
   return (
     <div
@@ -182,29 +202,89 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
       }}
     >
       <div
+        onClick={() => setCollapsed(c => !c)}
         style={{
           padding: "6px 12px",
           background: "var(--bg-tertiary)",
-          borderBottom: "1px solid var(--border)",
+          borderBottom: collapsed ? "none" : "1px solid var(--border)",
           fontSize: 12,
           fontFamily: "monospace",
           color: "var(--text-primary)",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: "pointer",
+          userSelect: "none",
+          opacity: reviewed ? 0.6 : 1,
         }}
       >
-        {fileName}
-      </div>
-      <div style={{ overflowX: "auto" }}>
-        <Diff
-          viewType={viewType}
-          diffType={type}
-          hunks={hunks}
-          tokens={tokens ?? null}
-          widgets={widgets}
-          gutterEvents={{ onClick: handleGutterClick }}
+        <span style={{ fontSize: 10, lineHeight: 1 }}>{collapsed ? "▸" : "▾"}</span>
+        <span style={{ flex: 1 }}>{fileName}</span>
+        <button
+          onClick={e => { e.stopPropagation(); setShowFileCommentInput(v => !v); }}
+          title="Comment on file"
+          style={{
+            background: "none",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            color: "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 11,
+            padding: "1px 7px",
+            fontFamily: "sans-serif",
+            lineHeight: 1.6,
+          }}
         >
-          {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}
-        </Diff>
+          &#128172;
+        </button>
+        <label
+          onClick={e => e.stopPropagation()}
+          style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontFamily: "sans-serif" }}
+        >
+          <input
+            type="checkbox"
+            checked={reviewed}
+            onChange={handleReviewedChange}
+            style={{ cursor: "pointer" }}
+          />
+          Reviewed
+        </label>
       </div>
+      {(fileLevelComments.length > 0 || showFileCommentInput) && (
+        <div style={{
+          padding: "8px 12px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--bg-secondary)",
+        }}>
+          {fileLevelComments.map(comment => (
+            <CommentWidget
+              key={comment.id}
+              comment={comment}
+              freshness={comment.freshness}
+              onResolve={onResolve}
+              onReopen={onReopen}
+              onDelete={onDelete}
+            />
+          ))}
+          {showFileCommentInput && (
+            <CommentInput onSubmit={handleFileCommentSubmit} onCancel={handleFileCommentCancel} />
+          )}
+        </div>
+      )}
+      {!collapsed && (
+        <div style={{ overflowX: "auto" }}>
+          <Diff
+            viewType={viewType}
+            diffType={type}
+            hunks={hunks}
+            tokens={tokens ?? null}
+            widgets={widgets}
+            gutterEvents={{ onClick: handleGutterClick }}
+          >
+            {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}
+          </Diff>
+        </div>
+      )}
     </div>
   );
 }
