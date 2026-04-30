@@ -30,3 +30,106 @@ body {
   display: flex;
   height: 100vh;
 }
+
+/* react-diff-view dark theme overrides */
+.diff-gutter {
+  position: relative;
+  cursor: pointer;
+  width: 50px;
+  min-width: 50px;
+}
+
+.diff-gutter:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+.diff-gutter:hover::before {
+  content: "+";
+  color: var(--accent);
+  font-weight: bold;
+  font-size: 14px;
+  position: absolute;
+  left: 2px;
+}
+
+.diff-line {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.diff-gutter-insert {
+  background: var(--diff-add-bg);
+  color: var(--diff-add-text);
+}
+
+.diff-gutter-delete {
+  background: var(--diff-del-bg);
+  color: var(--diff-del-text);
+}
+
+.diff-code-insert {
+  background: var(--diff-add-bg);
+}
+
+.diff-code-delete {
+  background: var(--diff-del-bg);
+}
+
+.diff-gutter-normal,
+.diff-code-normal {
+  background: var(--bg-primary);
+}
+
+.diff-gutter-omit,
+.diff-code-omit {
+  background: var(--bg-secondary);
+}
+
+table.diff {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diff td {
+  padding: 0 8px;
+  border: none;
+  vertical-align: top;
+}
+
+.diff-widget {
+  background: transparent;
+}
+
+.diff-widget td {
+  padding: 0 8px;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* File tree hover */
+.file-tree-item:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
+}

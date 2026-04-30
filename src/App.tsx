@@ -15,6 +15,17 @@ export function App() {
   const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
   const { comments, addComment, resolveComment, reopenComment, removeComment } = useComments(base, head);
 
+  const openComments = comments.filter(c => c.status === "open");
+
+  const scrollToFirstOpenComment = () => {
+    const firstOpen = openComments[0];
+    if (!firstOpen) return;
+    const el = document.querySelector(`[data-comment-id="${firstOpen.id}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   useEffect(() => {
     getBranches().then(({ branches, current }) => {
       setBranches(branches);
@@ -69,6 +80,27 @@ export function App() {
           />
         </div>
       </aside>
+      {openComments.length > 0 && (
+        <button
+          onClick={scrollToFirstOpenComment}
+          style={{
+            position: "fixed",
+            top: 12,
+            right: 12,
+            zIndex: 100,
+            background: "var(--accent)",
+            color: "white",
+            borderRadius: 12,
+            padding: "4px 12px",
+            fontSize: 12,
+            cursor: "pointer",
+            border: "none",
+            fontFamily: "inherit",
+          }}
+        >
+          {openComments.length} open {openComments.length === 1 ? "comment" : "comments"}
+        </button>
+      )}
       <main style={{ flex: 1, overflow: "auto", padding: 16 }}>
         {base && head && base !== head ? (
           diffLoading ? (
