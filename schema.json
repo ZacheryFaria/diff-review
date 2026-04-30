@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://diff-review.local/review.schema.json",
+  "title": "DiffReviewFile",
+  "description": "A diff-review comment file for a branch comparison",
+  "type": "object",
+  "required": ["version", "repo", "base", "head", "createdAt", "updatedAt", "comments"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version"
+    },
+    "repo": {
+      "type": "string",
+      "description": "Absolute path to the git repository root"
+    },
+    "base": {
+      "type": "string",
+      "description": "Base branch name for comparison"
+    },
+    "head": {
+      "type": "string",
+      "description": "Head branch name for comparison"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this review file was created"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of last modification"
+    },
+    "comments": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Comment" }
+    }
+  },
+  "$defs": {
+    "Comment": {
+      "type": "object",
+      "required": ["id", "file", "startLine", "endLine", "side", "body", "status", "createdAt", "anchor"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique comment ID, format: c_{timestamp}_{random}"
+        },
+        "file": {
+          "type": "string",
+          "description": "Relative file path from repo root"
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Start line number in the file version indicated by side"
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "End line number (inclusive). Same as startLine for single-line comments"
+        },
+        "side": {
+          "type": "string",
+          "enum": ["old", "new"],
+          "description": "Whether the comment is on the base (old) or head (new) version"
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Comment text (markdown supported)"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "resolved"],
+          "description": "Whether the comment is still open or has been resolved"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "anchor": { "$ref": "#/$defs/Anchor" }
+      }
+    },
+    "Anchor": {
+      "type": "object",
+      "required": ["baseCommit", "headCommit", "hunkHash", "context"],
+      "additionalProperties": false,
+      "properties": {
+        "baseCommit": {
+          "type": "string",
+          "description": "Short SHA of the base commit at comment creation time"
+        },
+        "headCommit": {
+          "type": "string",
+          "description": "Short SHA of the head commit at comment creation time"
+        },
+        "hunkHash": {
+          "type": "string",
+          "description": "SHA-256 hash of the diff hunk containing the commented lines"
+        },
+        "context": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "The actual source lines the comment covers, preserved for orphaned comments"
+        }
+      }
+    }
+  }
+}
