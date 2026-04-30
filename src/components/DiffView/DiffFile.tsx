@@ -241,7 +241,6 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
         <span style={{ fontSize: 10, lineHeight: 1 }}>{collapsed ? "▸" : "▾"}</span>
         <span
           className="diff-file-link"
-          style={{ flex: 1 }}
           onClick={e => {
             e.stopPropagation();
             const hash = `#${encodeURIComponent(fileName)}`;
@@ -250,6 +249,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
           }}
           title="Click to copy link to this file"
         >{fileName}</span>
+        <span style={{ flex: 1 }} />
         <button
           onClick={e => { e.stopPropagation(); setShowFileCommentInput(v => !v); }}
           title="Comment on file"

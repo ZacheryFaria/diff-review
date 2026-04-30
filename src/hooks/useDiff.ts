@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getDiff } from "../api";
 
 export function useDiff(base: string, head: string) {
@@ -8,7 +8,7 @@ export function useDiff(base: string, head: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     if (!base || !head || base === head) {
       setDiff("");
       return;
@@ -25,5 +25,9 @@ export function useDiff(base: string, head: string) {
       .finally(() => setLoading(false));
   }, [base, head]);
 
-  return { diff, baseCommit, headCommit, loading, error };
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { diff, baseCommit, headCommit, loading, error, refresh };
 }

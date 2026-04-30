@@ -18,11 +18,12 @@ interface DiffViewProps {
   reviewedFiles: Record<string, ReviewedFileState>;
   onMarkReviewed: (file: string) => Promise<void>;
   onUnmarkReviewed: (file: string) => Promise<void>;
+  onRefresh: () => void;
 }
 
-export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete, reviewedFiles, onMarkReviewed, onUnmarkReviewed }: DiffViewProps) {
+export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete, reviewedFiles, onMarkReviewed, onUnmarkReviewed, onRefresh }: DiffViewProps) {
   const [viewType, setViewType] = useState<"unified" | "split">("split");
-  const files = parseDiff(diffText, { nearbySequences: "zip" });
+  const files = parseDiff(diffText, { nearbySequences: "zip" }).filter(f => f.newPath || f.oldPath);
 
   // suppress unused variable warnings for baseCommit/headCommit (used by parent for display)
   void baseCommit;
@@ -42,10 +43,28 @@ export function DiffView({ diffText, baseCommit, headCommit, base, head, comment
           borderBottom: "1px solid var(--border)",
         }}
       >
-        <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-          {files.length} file{files.length !== 1 ? "s" : ""} changed
-        </span>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+            {files.length} file{files.length !== 1 ? "s" : ""} changed
+          </span>
+          <button
+            onClick={onRefresh}
+            title="Refresh diff and comments"
+            style={{
+              padding: "2px 6px",
+              fontSize: 16,
+              lineHeight: 1,
+              cursor: "pointer",
+              borderRadius: 4,
+              border: "none",
+              background: "transparent",
+              color: "var(--text-secondary)",
+            }}
+          >
+            ↻
+          </button>
+        </div>
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
           <button
             onClick={() => setViewType("unified")}
             style={{

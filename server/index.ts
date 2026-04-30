@@ -1,5 +1,6 @@
 import express, { Express } from "express";
 import { resolve } from "path";
+import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { branchesRouter } from "./routes/branches.js";
 import { diffRouter } from "./routes/diff.js";
@@ -23,10 +24,12 @@ export async function createApp(repoDir: string): Promise<Express> {
 
   const __dirname = fileURLToPath(new URL(".", import.meta.url));
   const clientDir = resolve(__dirname, "../client");
-  app.use(express.static(clientDir));
-  app.get("*", (_req, res) => {
-    res.sendFile(resolve(clientDir, "index.html"));
-  });
+  if (existsSync(clientDir)) {
+    app.use(express.static(clientDir));
+    app.get("*", (_req, res) => {
+      res.sendFile(resolve(clientDir, "index.html"));
+    });
+  }
 
   return app;
 }

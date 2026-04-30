@@ -15,6 +15,7 @@ mkdir -p "$BIN_DIR"
 LINK="${BIN_DIR}/diff-review"
 TARGET="$(pwd)/bin/diff-review.js"
 
+chmod +x "$TARGET"
 ln -sf "$TARGET" "$LINK"
 echo "Linked: $LINK -> $TARGET"
 echo "Done! Run 'diff-review' from any git repo."

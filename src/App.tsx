@@ -17,8 +17,16 @@ export function App() {
   const [head, setHead] = useState(() => getInitialParam("head", ""));
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
-  const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
-  const { comments, addComment, resolveComment, reopenComment, removeComment, reviewedFiles, markReviewed, unmarkReviewed } = useComments(base, head);
+  const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError, refresh: refreshDiff } = useDiff(base, head);
+  const { comments, addComment, resolveComment, reopenComment, removeComment, reviewedFiles, markReviewed, unmarkReviewed, refresh: refreshComments } = useComments(base, head);
+
+  const handleRefresh = () => {
+    refreshDiff();
+    refreshComments();
+    if (base && head && base !== head) {
+      getFiles(base, head).then(({ files }) => setFiles(files));
+    }
+  };
 
   const openComments = comments.filter(c => c.status === "open");
 
@@ -136,6 +144,8 @@ export function App() {
             <p style={{ color: "var(--text-secondary)" }}>Loading diff...</p>
           ) : diffError ? (
             <p style={{ color: "var(--text-secondary)" }}>Error: {diffError}</p>
+          ) : !diff ? (
+            <p style={{ color: "var(--text-secondary)" }}>No differences between {base} and {head}</p>
           ) : (
             <DiffView
               diffText={diff}
@@ -151,6 +161,7 @@ export function App() {
               reviewedFiles={reviewedFiles}
               onMarkReviewed={markReviewed}
               onUnmarkReviewed={unmarkReviewed}
+              onRefresh={handleRefresh}
             />
           )
         ) : (
