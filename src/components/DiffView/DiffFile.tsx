@@ -1,8 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const refractor = require("refractor") as { highlight: (code: string, language: string) => unknown };
+// @ts-expect-error refractor v3 has no type declarations
+import refractor from "refractor";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
 import type { CommentWithFreshness } from "../../hooks/useComments";
 import { CommentWidget } from "./CommentWidget";
