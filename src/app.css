@@ -116,12 +116,53 @@ table.diff colgroup {
   user-select: none;
 }
 
+/* Ensure code text is always readable on diff backgrounds */
+.diff-code-insert,
+.diff-code-delete,
+.diff-code-normal {
+  color: var(--text-primary);
+}
+
+/* Inline edit highlights (markEdits) — use subtle background only, no color change */
+.diff-code-insert .diff-code-edit {
+  background: rgba(46, 160, 67, 0.3);
+  color: inherit;
+}
+
+.diff-code-delete .diff-code-edit {
+  background: rgba(248, 81, 73, 0.3);
+  color: inherit;
+}
+
+/* Override syntax highlighting colors within diffs to be subtle */
+.diff-code span[class^="token"],
+.diff-code span[class*=" token"] {
+  color: inherit !important;
+}
+
+/* Restore some syntax color variety while keeping contrast */
+.diff-code .token.keyword { color: #ff7b72 !important; }
+.diff-code .token.string { color: #a5d6ff !important; }
+.diff-code .token.comment { color: #8b949e !important; }
+.diff-code .token.function { color: #d2a8ff !important; }
+.diff-code .token.number { color: #79c0ff !important; }
+.diff-code .token.operator { color: #ff7b72 !important; }
+.diff-code .token.class-name { color: #ffa657 !important; }
+.diff-code .token.builtin { color: #ffa657 !important; }
+.diff-code .token.punctuation { color: #c9d1d9 !important; }
+
 .diff-widget {
   background: transparent;
 }
 
 .diff-widget td {
   padding: 0 8px;
+}
+
+/* File header filename link hover */
+.diff-file-link:hover {
+  text-decoration: underline;
+  color: var(--text-link);
 }
 
 /* Smooth scroll */

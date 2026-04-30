@@ -37,6 +37,12 @@
     "comments": {
       "type": "array",
       "items": { "$ref": "#/$defs/Comment" }
+    },
+    "reviewedFiles": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/ReviewedFile" },
+      "default": {},
+      "description": "Map of file path to reviewed status. Keys are relative file paths."
     }
   },
   "$defs": {
@@ -83,6 +89,22 @@
           "format": "date-time"
         },
         "anchor": { "$ref": "#/$defs/Anchor" }
+      }
+    },
+    "ReviewedFile": {
+      "type": "object",
+      "required": ["reviewedAt", "fileHash"],
+      "additionalProperties": false,
+      "properties": {
+        "reviewedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the file was marked as reviewed"
+        },
+        "fileHash": {
+          "type": "string",
+          "description": "Hash of the file's diff section at review time. If current hash differs, review is stale."
+        }
       }
     },
     "Anchor": {

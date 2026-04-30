@@ -5,6 +5,7 @@ import "react-diff-view/style/index.css";
 import refractor from "refractor";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
 import type { CommentWithFreshness } from "../../hooks/useComments";
+import type { ReviewedFileState } from "../../api";
 import { CommentWidget } from "./CommentWidget";
 import { CommentInput } from "../CommentInput";
 
@@ -33,7 +34,8 @@ function getLanguage(fileName: string): string {
 
 interface PendingComment {
   file: string;
-  line: number;
+  startLine: number;
+  endLine: number;
   side: "old" | "new";
 }
 
@@ -45,6 +47,9 @@ interface DiffFileProps {
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;
   onDelete: (id: string) => void;
+  reviewedState?: ReviewedFileState;
+  onMarkReviewed: () => Promise<void>;
+  onUnmarkReviewed: () => Promise<void>;
 }
 
 function findChangeForLine(
@@ -97,7 +102,7 @@ function buildWidgets(
   }
 
   if (pendingComment) {
-    const change = findChangeForLine(allChanges, pendingComment.line, pendingComment.side);
+    const change = findChangeForLine(allChanges, pendingComment.endLine, pendingComment.side);
     if (change) {
       const key = getChangeKey(change);
       const existing = widgets[key];
@@ -113,14 +118,17 @@ function buildWidgets(
   return widgets;
 }
 
-export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete }: DiffFileProps) {
+export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, reviewedState, onMarkReviewed, onUnmarkReviewed }: DiffFileProps) {
   const { type, hunks, oldPath, newPath } = fileData;
   const fileName = newPath || oldPath || "unknown";
   const language = getLanguage(fileName);
   const [pendingComment, setPendingComment] = useState<PendingComment | null>(null);
+  const [lastClickedLine, setLastClickedLine] = useState<{ line: number; side: "old" | "new" } | null>(null);
   const [showFileCommentInput, setShowFileCommentInput] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-  const [reviewed, setReviewed] = useState(false);
+  const [collapsed, setCollapsed] = useState(!!reviewedState?.fresh);
+
+  const reviewed = !!reviewedState;
+  const reviewedStale = reviewed && !reviewedState!.fresh;
 
   const fileLevelComments = comments.filter(c => c.startLine === 0);
   const lineLevelComments = comments.filter(c => c.startLine !== 0);
@@ -137,7 +145,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
     tokens = undefined;
   }
 
-  const handleGutterClick = ({ change, side }: { change: ChangeData | null; side?: "old" | "new" }) => {
+  const handleGutterClick = ({ change, side }: { change: ChangeData | null; side?: "old" | "new" }, e?: MouseEvent) => {
     if (!change) return;
     const side_ = side ?? (change.type === "delete" ? "old" : "new");
     let line: number;
@@ -149,19 +157,28 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
         : (change as { newLineNumber: number }).newLineNumber;
     }
     if (!line) return;
-    setPendingComment({ file: fileName, line, side: side_ });
+
+    if (e?.shiftKey && lastClickedLine && lastClickedLine.side === side_) {
+      const startLine = Math.min(lastClickedLine.line, line);
+      const endLine = Math.max(lastClickedLine.line, line);
+      setPendingComment({ file: fileName, startLine, endLine, side: side_ });
+    } else {
+      setPendingComment({ file: fileName, startLine: line, endLine: line, side: side_ });
+      setLastClickedLine({ line, side: side_ });
+    }
   };
 
   const handleSubmit = async (body: string) => {
     if (!pendingComment) return;
     await onAddComment({
       file: pendingComment.file,
-      startLine: pendingComment.line,
-      endLine: pendingComment.line,
+      startLine: pendingComment.startLine,
+      endLine: pendingComment.endLine,
       side: pendingComment.side,
       body,
     });
     setPendingComment(null);
+    setLastClickedLine(null);
   };
 
   const handleCancel = () => setPendingComment(null);
@@ -186,9 +203,12 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
 
   const handleReviewedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.stopPropagation();
-    const checked = e.target.checked;
-    setReviewed(checked);
-    if (checked) setCollapsed(true);
+    if (e.target.checked) {
+      onMarkReviewed();
+      setCollapsed(true);
+    } else {
+      onUnmarkReviewed();
+    }
   };
 
   return (
@@ -219,7 +239,17 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
         }}
       >
         <span style={{ fontSize: 10, lineHeight: 1 }}>{collapsed ? "▸" : "▾"}</span>
-        <span style={{ flex: 1 }}>{fileName}</span>
+        <span
+          className="diff-file-link"
+          style={{ flex: 1 }}
+          onClick={e => {
+            e.stopPropagation();
+            const hash = `#${encodeURIComponent(fileName)}`;
+            window.history.replaceState(null, "", `${window.location.search}${hash}`);
+            navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}${window.location.search}${hash}`);
+          }}
+          title="Click to copy link to this file"
+        >{fileName}</span>
         <button
           onClick={e => { e.stopPropagation(); setShowFileCommentInput(v => !v); }}
           title="Comment on file"
@@ -247,7 +277,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
             onChange={handleReviewedChange}
             style={{ cursor: "pointer" }}
           />
-          Reviewed
+          {reviewedStale ? "Reviewed (stale)" : "Reviewed"}
         </label>
       </div>
       {(fileLevelComments.length > 0 || showFileCommentInput) && (
@@ -279,7 +309,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
             hunks={hunks}
             tokens={tokens ?? null}
             widgets={widgets}
-            gutterEvents={{ onClick: handleGutterClick }}
+            gutterEvents={{ onClick: (info: any, e: any) => handleGutterClick(info, e) }}
           >
             {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}
           </Diff>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { parseDiff } from "react-diff-view";
 import { DiffFile } from "./DiffFile";
 import type { CommentWithFreshness } from "../../hooks/useComments";
+import type { ReviewedFileState } from "../../api";
 
 interface DiffViewProps {
   diffText: string;
@@ -14,9 +15,12 @@ interface DiffViewProps {
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;
   onDelete: (id: string) => void;
+  reviewedFiles: Record<string, ReviewedFileState>;
+  onMarkReviewed: (file: string) => Promise<void>;
+  onUnmarkReviewed: (file: string) => Promise<void>;
 }
 
-export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete }: DiffViewProps) {
+export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete, reviewedFiles, onMarkReviewed, onUnmarkReviewed }: DiffViewProps) {
   const [viewType, setViewType] = useState<"unified" | "split">("split");
   const files = parseDiff(diffText, { nearbySequences: "zip" });
 
@@ -85,6 +89,9 @@ export function DiffView({ diffText, baseCommit, headCommit, base, head, comment
             onResolve={onResolve}
             onReopen={onReopen}
             onDelete={onDelete}
+            reviewedState={reviewedFiles[fileName]}
+            onMarkReviewed={() => onMarkReviewed(fileName)}
+            onUnmarkReviewed={() => onUnmarkReviewed(fileName)}
           />
         );
       })}

@@ -18,7 +18,7 @@ export function App() {
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
-  const { comments, addComment, resolveComment, reopenComment, removeComment } = useComments(base, head);
+  const { comments, addComment, resolveComment, reopenComment, removeComment, reviewedFiles, markReviewed, unmarkReviewed } = useComments(base, head);
 
   const openComments = comments.filter(c => c.status === "open");
 
@@ -148,6 +148,9 @@ export function App() {
               onResolve={resolveComment}
               onReopen={reopenComment}
               onDelete={removeComment}
+              reviewedFiles={reviewedFiles}
+              onMarkReviewed={markReviewed}
+              onUnmarkReviewed={unmarkReviewed}
             />
           )
         ) : (

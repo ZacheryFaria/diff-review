@@ -9,7 +9,12 @@ pnpm install
 echo "Building..."
 pnpm run build
 
-echo "Linking globally..."
-pnpm link --global
+BIN_DIR="${HOME}/bin"
+mkdir -p "$BIN_DIR"
 
+LINK="${BIN_DIR}/diff-review"
+TARGET="$(pwd)/bin/diff-review.js"
+
+ln -sf "$TARGET" "$LINK"
+echo "Linked: $LINK -> $TARGET"
 echo "Done! Run 'diff-review' from any git repo."

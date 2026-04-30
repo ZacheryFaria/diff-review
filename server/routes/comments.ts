@@ -9,6 +9,15 @@ function generateId(): string {
   return `c_${Date.now()}_${randomBytes(3).toString("hex")}`;
 }
 
+function hashFileDiff(diffText: string, file: string): string {
+  const filePattern = `diff --git a/${file} b/${file}`;
+  const fileStart = diffText.indexOf(filePattern);
+  if (fileStart === -1) return "";
+  const nextFile = diffText.indexOf("\ndiff --git", fileStart + 1);
+  const fileDiff = nextFile === -1 ? diffText.slice(fileStart) : diffText.slice(fileStart, nextFile);
+  return createHash("sha256").update(fileDiff).digest("hex").slice(0, 16);
+}
+
 commentsRouter.get("/comments", async (req, res) => {
   try {
     const { base, head } = req.query as { base: string; head: string };
@@ -45,7 +54,14 @@ commentsRouter.get("/comments", async (req, res) => {
       return { ...comment, freshness: "stale" };
     });
 
-    res.json({ comments: commentsWithFreshness });
+    const reviewedFiles: Record<string, { reviewedAt: string; fileHash: string; fresh: boolean }> = {};
+    const storedReviewed = (review as any).reviewedFiles ?? {};
+    for (const [file, data] of Object.entries(storedReviewed) as [string, any][]) {
+      const currentHash = hashFileDiff(diffText, file);
+      reviewedFiles[file] = { ...data, fresh: currentHash === data.fileHash };
+    }
+
+    res.json({ comments: commentsWithFreshness, reviewedFiles });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -125,6 +141,50 @@ commentsRouter.patch("/comments/:id", async (req, res) => {
     review.updatedAt = new Date().toISOString();
     await storage.save(review);
     res.json(comment);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+commentsRouter.put("/reviewed/:file(*)", async (req, res) => {
+  try {
+    const { base, head } = req.body;
+    const file = (req.params as Record<string, string>)["file"];
+    const storage: Storage = req.app.locals.storage;
+    const repoDir: string = req.app.locals.repoDir;
+
+    const mergeBase = await getMergeBase(repoDir, base, head);
+    const diffText = await getDiff(repoDir, mergeBase, head);
+    const fileHash = hashFileDiff(diffText, file);
+
+    let review = await storage.load(base, head);
+    if (!review) {
+      const now = new Date().toISOString();
+      review = { version: 1, repo: repoDir, base, head, createdAt: now, updatedAt: now, comments: [] };
+    }
+    if (!(review as any).reviewedFiles) (review as any).reviewedFiles = {};
+    (review as any).reviewedFiles[file] = { reviewedAt: new Date().toISOString(), fileHash };
+    review.updatedAt = new Date().toISOString();
+    await storage.save(review);
+    res.json({ file, fileHash });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+commentsRouter.delete("/reviewed/:file(*)", async (req, res) => {
+  try {
+    const { base, head } = req.body;
+    const file = (req.params as Record<string, string>)["file"];
+    const storage: Storage = req.app.locals.storage;
+    const review = await storage.load(base, head);
+    if (!review) return res.status(404).json({ error: "Review not found" });
+    if ((review as any).reviewedFiles) {
+      delete (review as any).reviewedFiles[file];
+    }
+    review.updatedAt = new Date().toISOString();
+    await storage.save(review);
+    res.status(204).send();
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }

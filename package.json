@@ -7,7 +7,7 @@
     "diff-review": "./bin/diff-review.js"
   },
   "scripts": {
-    "dev": "concurrently \"tsx watch server/index.ts\" \"vite\"",
+    "dev": "concurrently \"tsx watch server/dev.ts\" \"vite\"",
     "build": "pnpm run generate-types && tsc -p tsconfig.server.json && vite build && cp schema.json dist/",
     "generate-types": "json2ts schema.json > src/types/schema.ts",
     "prepublishOnly": "pnpm run build"

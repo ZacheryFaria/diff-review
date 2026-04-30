@@ -22,7 +22,16 @@ export async function getFiles(base: string, head: string): Promise<{ files: { f
   return fetchJson(`${BASE}/files?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`);
 }
 
-export async function getComments(base: string, head: string): Promise<{ comments: CommentWithFreshness[] }> {
+export interface ReviewedFileState {
+  reviewedAt: string;
+  fileHash: string;
+  fresh: boolean;
+}
+
+export async function getComments(base: string, head: string): Promise<{
+  comments: CommentWithFreshness[];
+  reviewedFiles: Record<string, ReviewedFileState>;
+}> {
   return fetchJson(`${BASE}/comments?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`);
 }
 
@@ -57,6 +66,22 @@ export async function updateComment(id: string, data: {
 
 export async function deleteComment(id: string, base: string, head: string): Promise<void> {
   return fetchJson(`${BASE}/comments/${id}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ base, head }),
+  });
+}
+
+export async function markFileReviewed(file: string, base: string, head: string): Promise<void> {
+  return fetchJson(`${BASE}/reviewed/${encodeURIComponent(file)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ base, head }),
+  });
+}
+
+export async function unmarkFileReviewed(file: string, base: string, head: string): Promise<void> {
+  return fetchJson(`${BASE}/reviewed/${encodeURIComponent(file)}`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ base, head }),

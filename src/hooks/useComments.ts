@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import * as api from "../api";
 import type { Comment } from "../types/schema";
+import type { ReviewedFileState } from "../api";
 
 export type CommentWithFreshness = Comment & { freshness?: "fresh" | "stale" | "orphaned" };
 
 export function useComments(base: string, head: string) {
   const [comments, setComments] = useState<CommentWithFreshness[]>([]);
+  const [reviewedFiles, setReviewedFiles] = useState<Record<string, ReviewedFileState>>({});
 
   const refresh = useCallback(() => {
     if (!base || !head) return;
-    api.getComments(base, head).then(({ comments }) => setComments(comments));
+    api.getComments(base, head).then(({ comments, reviewedFiles }) => {
+      setComments(comments);
+      setReviewedFiles(reviewedFiles ?? {});
+    });
   }, [base, head]);
 
   useEffect(() => {
@@ -42,5 +47,19 @@ export function useComments(base: string, head: string) {
     refresh();
   };
 
-  return { comments, addComment, resolveComment, reopenComment, removeComment, refresh };
+  const markReviewed = async (file: string) => {
+    await api.markFileReviewed(file, base, head);
+    refresh();
+  };
+
+  const unmarkReviewed = async (file: string) => {
+    await api.unmarkFileReviewed(file, base, head);
+    refresh();
+  };
+
+  return {
+    comments, addComment, resolveComment, reopenComment, removeComment,
+    reviewedFiles, markReviewed, unmarkReviewed,
+    refresh,
+  };
 }
