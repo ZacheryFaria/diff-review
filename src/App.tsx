@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
-import { getBranches } from "./api";
+import { getBranches, getFiles } from "./api";
+import { FileTree } from "./components/Sidebar/FileTree";
 
 export function App() {
   const [branches, setBranches] = useState<string[]>([]);
   const [current, setCurrent] = useState("");
   const [base, setBase] = useState("main");
   const [head, setHead] = useState("");
+  const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
+  const [activeFile, setActiveFile] = useState<string | null>(null);
 
   useEffect(() => {
     getBranches().then(({ branches, current }) => {
@@ -17,6 +20,14 @@ export function App() {
       else setBase(branches[0] ?? "");
     });
   }, []);
+
+  useEffect(() => {
+    if (base && head && base !== head) {
+      getFiles(base, head).then(({ files }) => setFiles(files));
+    } else {
+      setFiles([]);
+    }
+  }, [base, head]);
 
   return (
     <>
@@ -40,6 +51,14 @@ export function App() {
           <p style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 8 }}>
             {base && head ? `Comparing ${base}...${head}` : "Select branches"}
           </p>
+          <FileTree
+            files={files}
+            activeFile={activeFile}
+            onFileClick={(file) => {
+              setActiveFile(file);
+              document.getElementById(file)?.scrollIntoView({ behavior: "smooth" });
+            }}
+          />
         </div>
       </aside>
       <main style={{ flex: 1, overflow: "auto", padding: 16 }}>
