@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { parseDiff } from "react-diff-view";
 import { DiffFile } from "./DiffFile";
-import type { Comment } from "../../types/schema";
+import type { CommentWithFreshness } from "../../hooks/useComments";
 
 interface DiffViewProps {
   diffText: string;
@@ -9,7 +9,7 @@ interface DiffViewProps {
   headCommit: string;
   base: string;
   head: string;
-  comments: Comment[];
+  comments: CommentWithFreshness[];
   onAddComment: (data: { file: string; startLine: number; endLine: number; side: "old" | "new"; body: string }) => Promise<void>;
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;

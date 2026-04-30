@@ -4,7 +4,7 @@ import "react-diff-view/style/index.css";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const refractor = require("refractor") as { highlight: (code: string, language: string) => unknown };
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
-import type { Comment } from "../../types/schema";
+import type { CommentWithFreshness } from "../../hooks/useComments";
 import { CommentWidget } from "./CommentWidget";
 import { CommentInput } from "../CommentInput";
 
@@ -40,7 +40,7 @@ interface PendingComment {
 interface DiffFileProps {
   fileData: FileData;
   viewType: "unified" | "split";
-  comments: Comment[];
+  comments: CommentWithFreshness[];
   onAddComment: (data: { file: string; startLine: number; endLine: number; side: "old" | "new"; body: string }) => Promise<void>;
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;
@@ -65,7 +65,7 @@ function findChangeForLine(
 
 function buildWidgets(
   hunks: HunkData[],
-  fileComments: Comment[],
+  fileComments: CommentWithFreshness[],
   pendingComment: PendingComment | null,
   onSubmit: (body: string) => void,
   onCancel: () => void,
@@ -86,6 +86,7 @@ function buildWidgets(
           {existing}
           <CommentWidget
             comment={comment}
+            freshness={comment.freshness}
             onResolve={onResolve}
             onReopen={onReopen}
             onDelete={onDelete}

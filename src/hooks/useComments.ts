@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import * as api from "../api";
 import type { Comment } from "../types/schema";
 
+export type CommentWithFreshness = Comment & { freshness?: "fresh" | "stale" | "orphaned" };
+
 export function useComments(base: string, head: string) {
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<CommentWithFreshness[]>([]);
 
   const refresh = useCallback(() => {
     if (!base || !head) return;

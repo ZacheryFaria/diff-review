@@ -14,9 +14,38 @@ commentsRouter.get("/comments", async (req, res) => {
     const { base, head } = req.query as { base: string; head: string };
     if (!base || !head) return res.status(400).json({ error: "base and head query params required" });
     const storage: Storage = req.app.locals.storage;
+    const repoDir: string = req.app.locals.repoDir;
     const review = await storage.load(base, head);
     if (!review) return res.json({ comments: [] });
-    res.json({ comments: review.comments });
+
+    const currentHeadCommit = await resolveRef(repoDir, head);
+    const mergeBase = await getMergeBase(repoDir, base, head);
+    const diffText = await getDiff(repoDir, mergeBase, head);
+
+    const commentsWithFreshness = review.comments.map((comment: any) => {
+      if (comment.anchor.headCommit === currentHeadCommit) {
+        return { ...comment, freshness: "fresh" };
+      }
+
+      const filePattern = `diff --git a/${comment.file} b/${comment.file}`;
+      const fileStart = diffText.indexOf(filePattern);
+
+      if (fileStart === -1) {
+        return { ...comment, freshness: "orphaned" };
+      }
+
+      const nextFile = diffText.indexOf("\ndiff --git", fileStart + 1);
+      const fileDiff = nextFile === -1 ? diffText.slice(fileStart) : diffText.slice(fileStart, nextFile);
+      const currentHash = createHash("sha256").update(fileDiff).digest("hex").slice(0, 16);
+
+      if (currentHash === comment.anchor.hunkHash) {
+        return { ...comment, freshness: "fresh" };
+      }
+
+      return { ...comment, freshness: "stale" };
+    });
+
+    res.json({ comments: commentsWithFreshness });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }

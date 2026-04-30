@@ -1,4 +1,5 @@
 import type { Comment } from "./types/schema";
+import type { CommentWithFreshness } from "./hooks/useComments";
 
 const BASE = "/api";
 
@@ -21,7 +22,7 @@ export async function getFiles(base: string, head: string): Promise<{ files: { f
   return fetchJson(`${BASE}/files?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`);
 }
 
-export async function getComments(base: string, head: string): Promise<{ comments: Comment[] }> {
+export async function getComments(base: string, head: string): Promise<{ comments: CommentWithFreshness[] }> {
   return fetchJson(`${BASE}/comments?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`);
 }
 
