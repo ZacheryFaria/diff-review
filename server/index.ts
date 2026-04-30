@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Express } from "express";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { branchesRouter } from "./routes/branches.js";
@@ -7,7 +7,7 @@ import { commentsRouter } from "./routes/comments.js";
 import { Storage } from "./storage.js";
 import { getRepoRoot } from "./git.js";
 
-export async function createApp(repoDir: string) {
+export async function createApp(repoDir: string): Promise<Express> {
   const app = express();
   app.use(express.json());
 
@@ -31,7 +31,7 @@ export async function createApp(repoDir: string) {
   return app;
 }
 
-export async function startServer(cwd: string, port: number) {
+export async function startServer(cwd: string, port: number): Promise<Express> {
   const repoDir = await getRepoRoot(cwd);
   const app = await createApp(repoDir);
   app.listen(port, () => {

@@ -1,7 +1,7 @@
-import { Router } from "express";
+import { Router, IRouter } from "express";
 import { getDiff, getMergeBase, getFileStats, resolveRef } from "../git.js";
 
-export const diffRouter = Router();
+export const diffRouter: IRouter = Router();
 
 diffRouter.get("/diff", async (req, res) => {
   try {

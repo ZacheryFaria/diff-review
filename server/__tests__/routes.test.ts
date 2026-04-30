@@ -7,7 +7,7 @@ import request from "supertest";
 import { createApp } from "../index.js";
 
 let repoDir: string;
-let app: ReturnType<typeof createApp>;
+let app: Awaited<ReturnType<typeof createApp>>;
 
 function git(...args: string[]) {
   execFileSync("git", args, { cwd: repoDir });

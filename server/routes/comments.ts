@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, IRouter } from "express";
 import { createHash, randomBytes } from "crypto";
 import { resolveRef, getDiff, getMergeBase } from "../git.js";
 import { Storage } from "../storage.js";
 
-export const commentsRouter = Router();
+export const commentsRouter: IRouter = Router();
 
 function generateId(): string {
   return `c_${Date.now()}_${randomBytes(3).toString("hex")}`;

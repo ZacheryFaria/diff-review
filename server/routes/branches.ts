@@ -1,7 +1,7 @@
-import { Router } from "express";
+import { Router, IRouter } from "express";
 import { getBranches } from "../git.js";
 
-export const branchesRouter = Router();
+export const branchesRouter: IRouter = Router();
 
 branchesRouter.get("/branches", async (req, res) => {
   try {
