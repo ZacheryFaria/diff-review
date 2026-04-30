@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { getBranches, getFiles } from "./api";
 import { FileTree } from "./components/Sidebar/FileTree";
+import { useDiff } from "./hooks/useDiff";
+import { DiffView } from "./components/DiffView/DiffView";
 
 export function App() {
   const [branches, setBranches] = useState<string[]>([]);
@@ -9,6 +11,7 @@ export function App() {
   const [head, setHead] = useState("");
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
 
   useEffect(() => {
     getBranches().then(({ branches, current }) => {
@@ -63,7 +66,19 @@ export function App() {
       </aside>
       <main style={{ flex: 1, overflow: "auto", padding: 16 }}>
         {base && head && base !== head ? (
-          <p>Diff view goes here — {base}...{head}</p>
+          diffLoading ? (
+            <p style={{ color: "var(--text-secondary)" }}>Loading diff...</p>
+          ) : diffError ? (
+            <p style={{ color: "var(--text-secondary)" }}>Error: {diffError}</p>
+          ) : (
+            <DiffView
+              diffText={diff}
+              baseCommit={baseCommit}
+              headCommit={headCommit}
+              base={base}
+              head={head}
+            />
+          )
         ) : (
           <p style={{ color: "var(--text-secondary)" }}>Select two different branches to compare</p>
         )}
