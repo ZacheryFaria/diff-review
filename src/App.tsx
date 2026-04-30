@@ -5,11 +5,16 @@ import { useDiff } from "./hooks/useDiff";
 import { useComments } from "./hooks/useComments";
 import { DiffView } from "./components/DiffView/DiffView";
 
+function getInitialParam(key: string, fallback: string): string {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(key) ?? fallback;
+}
+
 export function App() {
   const [branches, setBranches] = useState<string[]>([]);
   const [current, setCurrent] = useState("");
-  const [base, setBase] = useState("main");
-  const [head, setHead] = useState("");
+  const [base, setBase] = useState(() => getInitialParam("base", "main"));
+  const [head, setHead] = useState(() => getInitialParam("head", ""));
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError } = useDiff(base, head);
@@ -27,13 +32,19 @@ export function App() {
   };
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlBase = urlParams.get("base");
+    const urlHead = urlParams.get("head");
+
     getBranches().then(({ branches, current }) => {
       setBranches(branches);
       setCurrent(current);
-      setHead(current);
-      if (branches.includes("main")) setBase("main");
-      else if (branches.includes("master")) setBase("master");
-      else setBase(branches[0] ?? "");
+      if (!urlHead) setHead(current);
+      if (!urlBase) {
+        if (branches.includes("main")) setBase("main");
+        else if (branches.includes("master")) setBase("master");
+        else setBase(branches[0] ?? "");
+      }
     });
   }, []);
 
@@ -44,6 +55,23 @@ export function App() {
       setFiles([]);
     }
   }, [base, head]);
+
+  useEffect(() => {
+    if (base && head) {
+      const params = new URLSearchParams({ base, head });
+      const hash = window.location.hash;
+      window.history.replaceState(null, "", `?${params}${hash}`);
+    }
+  }, [base, head]);
+
+  useEffect(() => {
+    if (diffLoading || !diff) return;
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      const el = document.getElementById(decodeURIComponent(hash));
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [diffLoading, diff]);
 
   // suppress unused variable warning — current is set but only used for initial head state
   void current;
@@ -75,6 +103,7 @@ export function App() {
             activeFile={activeFile}
             onFileClick={(file) => {
               setActiveFile(file);
+              window.history.replaceState(null, "", `?${new URLSearchParams({ base, head })}#${encodeURIComponent(file)}`);
               document.getElementById(file)?.scrollIntoView({ behavior: "smooth" });
             }}
           />
