@@ -129,7 +129,7 @@ export function FileTree({ files, activeFile, onFileClick, isIgnored, onIgnoreFi
   const visibleFiles = files.filter(f => !isIgnored(f.file));
   const ignoredFiles = files.filter(f => isIgnored(f.file));
   const tree = buildFileTree(visibleFiles);
-  const [expanded, setExpanded] = useState<Set<string>>(() => getExpandedPaths(activeFile));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(collectDirPaths(tree)));
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; file: string } | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
 

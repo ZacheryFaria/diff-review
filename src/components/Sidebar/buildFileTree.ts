@@ -55,7 +55,24 @@ export function buildFileTree(files: FileStat[]): TreeNode[] {
     }
   }
 
-  return sortTree(root);
+  return collapseTree(sortTree(root));
+}
+
+function collapseTree(nodes: TreeNode[]): TreeNode[] {
+  return nodes.map(node => {
+    if (node.children.length === 0) return node;
+    node.children = collapseTree(node.children);
+    // Flatten: if a dir has exactly one child and that child is also a dir, merge them
+    if (node.children.length === 1 && node.children[0].children.length > 0) {
+      const child = node.children[0];
+      return {
+        name: `${node.name}/${child.name}`,
+        path: child.path,
+        children: child.children,
+      };
+    }
+    return node;
+  });
 }
 
 export function getExpandedPaths(activeFile: string | null): Set<string> {
