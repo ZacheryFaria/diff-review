@@ -134,6 +134,10 @@ export function FileTree({ files, activeFile, onFileClick, isIgnored, onIgnoreFi
   const [showIgnored, setShowIgnored] = useState(false);
 
   useEffect(() => {
+    setExpanded(new Set(collectDirPaths(tree)));
+  }, [files.length]);
+
+  useEffect(() => {
     const newPaths = getExpandedPaths(activeFile);
     if (newPaths.size === 0) return;
     setExpanded(prev => {
