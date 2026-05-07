@@ -87,3 +87,29 @@ export async function unmarkFileReviewed(file: string, base: string, head: strin
     body: JSON.stringify({ base, head }),
   });
 }
+
+export interface StructuralChange {
+  type: "moved" | "renamed" | "formatting";
+  label: string;
+  oldStartLine?: number;
+  oldEndLine?: number;
+  newStartLine?: number;
+  newEndLine?: number;
+  details?: string;
+}
+
+export interface StructuralDiffResponse {
+  supported: boolean;
+  reason?: string;
+  changes?: StructuralChange[];
+}
+
+export async function getStructuralDiff(
+  file: string,
+  base: string,
+  head: string
+): Promise<StructuralDiffResponse> {
+  return fetchJson(
+    `${BASE}/structural-diff?file=${encodeURIComponent(file)}&base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`
+  );
+}

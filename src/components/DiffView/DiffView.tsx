@@ -28,8 +28,6 @@ export function DiffView({ diffText, baseCommit, headCommit, base, head, comment
   // suppress unused variable warnings for baseCommit/headCommit (used by parent for display)
   void baseCommit;
   void headCommit;
-  void base;
-  void head;
 
   return (
     <div>
@@ -111,6 +109,8 @@ export function DiffView({ diffText, baseCommit, headCommit, base, head, comment
             reviewedState={reviewedFiles[fileName]}
             onMarkReviewed={() => onMarkReviewed(fileName)}
             onUnmarkReviewed={() => onUnmarkReviewed(fileName)}
+            base={base}
+            head={head}
           />
         );
       })}
