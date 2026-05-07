@@ -1,5 +1,4 @@
 import type { Comment } from "./types/schema";
-import type { CommentWithFreshness } from "./hooks/useComments";
 
 const BASE = "/api";
 
@@ -27,6 +26,8 @@ export interface ReviewedFileState {
   fileHash: string;
   fresh: boolean;
 }
+
+export type CommentWithFreshness = Comment & { freshness?: "fresh" | "stale" | "orphaned" };
 
 export async function getComments(base: string, head: string): Promise<{
   comments: CommentWithFreshness[];

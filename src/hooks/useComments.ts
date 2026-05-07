@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import * as api from "../api";
-import type { Comment } from "../types/schema";
 import type { ReviewedFileState } from "../api";
 
-export type CommentWithFreshness = Comment & { freshness?: "fresh" | "stale" | "orphaned" };
+export type { CommentWithFreshness } from "../api";
 
 export function useComments(base: string, head: string) {
   const [comments, setComments] = useState<CommentWithFreshness[]>([]);

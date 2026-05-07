@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { parseDiff } from "react-diff-view";
 import { DiffFile } from "./DiffFile";
-import type { CommentWithFreshness } from "../../hooks/useComments";
+import type { CommentWithFreshness } from "../../api";
 import type { ReviewedFileState } from "../../api";
 
 interface DiffViewProps {

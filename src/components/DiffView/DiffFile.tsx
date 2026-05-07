@@ -2,7 +2,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
-import type { CommentWithFreshness } from "../../hooks/useComments";
+import type { CommentWithFreshness } from "../../api";
 import type { ReviewedFileState } from "../../api";
 import { getStructuralDiff, type StructuralDiffResponse } from "../../api";
 import { refractor, getLanguage } from "../../languages";
@@ -212,12 +212,15 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
         marginBottom: 24,
         border: "1px solid var(--border)",
         borderRadius: 6,
-        overflow: "hidden",
+        overflow: "clip",
       }}
     >
       <div
         onClick={() => setCollapsed(c => !c)}
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
           padding: "6px 12px",
           background: "var(--bg-tertiary)",
           borderBottom: collapsed ? "none" : "1px solid var(--border)",
