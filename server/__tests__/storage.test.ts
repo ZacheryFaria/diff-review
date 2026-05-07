@@ -68,6 +68,41 @@ describe("load / save", () => {
     expect(loaded).toEqual(review);
   });
 
+  it("round-trips a comment with source field", async () => {
+    await storage.ensureDir();
+    const now = new Date().toISOString();
+    const review = {
+      version: 1 as const,
+      repo: repoDir,
+      base: "main",
+      head: "feature",
+      createdAt: now,
+      updatedAt: now,
+      comments: [
+        {
+          id: "c_123_abc",
+          file: "src/index.ts",
+          startLine: 10,
+          endLine: 10,
+          side: "new" as const,
+          body: "Agent comment",
+          status: "open" as const,
+          createdAt: now,
+          source: "claude",
+          anchor: {
+            baseCommit: "abc1234",
+            headCommit: "def5678",
+            hunkHash: "a".repeat(64),
+            context: ["const x = 1;"],
+          },
+        },
+      ],
+    };
+    await storage.save(review);
+    const loaded = await storage.load("main", "feature");
+    expect(loaded?.comments[0].source).toBe("claude");
+  });
+
   it("rejects invalid data", async () => {
     await storage.ensureDir();
     const bad = { version: 999, repo: repoDir };

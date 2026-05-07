@@ -88,7 +88,11 @@
           "type": "string",
           "format": "date-time"
         },
-        "anchor": { "$ref": "#/$defs/Anchor" }
+        "anchor": { "$ref": "#/$defs/Anchor" },
+        "source": {
+          "type": "string",
+          "description": "Origin of the comment (e.g. 'human', 'claude'). Defaults to 'human' if omitted."
+        }
       }
     },
     "ReviewedFile": {
