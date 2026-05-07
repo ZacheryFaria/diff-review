@@ -27,29 +27,30 @@ diff-review --repo /path/to/repo --port 9000 &
 
 The server picks a random port by default and prints it on startup. Instance metadata is written to `~/.diff-review/instances/<repo-slug>.json`.
 
-### Discover a running instance
+### List running instances
 
-Check if a server is already running for a repo:
+```bash
+diff-review list
+```
+
+Shows all running diff-review instances with repo slug, port, URL, and uptime. Automatically cleans up stale entries.
+
+### Stop diff-review
+
+```bash
+diff-review stop <query>    # partial match on repo slug
+diff-review stop --all      # stop all instances
+```
+
+Sends a shutdown request via the HTTP API, falling back to SIGTERM if unresponsive.
+
+### Discover a running instance (programmatic)
 
 ```bash
 cat ~/.diff-review/instances/<repo-slug>.json
 ```
 
 This returns `{ "port": N, "pid": N, "repoPath": "...", "startedAt": "..." }`.
-
-### Stop diff-review
-
-Via the agent API:
-
-```bash
-curl -s -X POST http://localhost:<port>/api/agent/shutdown
-```
-
-Or via signal:
-
-```bash
-kill $(cat ~/.diff-review/instances/<repo-slug>.json | python3 -c "import json,sys;print(json.load(sys.stdin)['pid'])")
-```
 
 ### Consume review feedback
 

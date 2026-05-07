@@ -27,4 +27,4 @@ mkdir -p "$SKILL_DIR"
 cp "$(pwd)/SKILL.md" "$SKILL_DIR/SKILL.md"
 echo "Installed Claude skill: $SKILL_DIR/SKILL.md"
 
-echo "Done! Run 'diff-review' from any git repo."
+echo "Done! Run 'diff-review' from any git repo. Use 'diff-review --help' for all commands."

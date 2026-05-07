@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir, unlink } from "fs/promises";
+import { readFile, writeFile, mkdir, unlink, readdir } from "fs/promises";
 import { join } from "path";
 
 export interface InstanceInfo {
@@ -53,5 +53,18 @@ export class InstanceRegistry {
     } catch {
       return false;
     }
+  }
+
+  async listAll(): Promise<Array<{ slug: string } & InstanceInfo>> {
+    await mkdir(this.dir, { recursive: true });
+    const files = await readdir(this.dir);
+    const results: Array<{ slug: string } & InstanceInfo> = [];
+    for (const file of files) {
+      if (!file.endsWith(".json")) continue;
+      const slug = file.replace(/\.json$/, "");
+      const info = await this.lookup(slug);
+      if (info) results.push({ slug, ...info });
+    }
+    return results;
   }
 }
