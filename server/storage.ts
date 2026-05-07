@@ -1,16 +1,13 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { homedir } from "os";
 import { createRequire } from "module";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
 
-// Load schema.json from the project root using createRequire so it works
-// regardless of JSON import assertion support in the runtime.
 const require = createRequire(import.meta.url);
 const schema = require("../schema.json");
 
-// Mirror the generated type from src/types/schema.ts inline so this module
-// stays within server/ (tsconfig.server.json has rootDir: "server").
 export interface DiffReviewFile {
   version: 1;
   repo: string;
@@ -27,29 +24,14 @@ const validate = ajv.compile<DiffReviewFile>(schema);
 
 export class Storage {
   private dir: string;
-  private repoDir: string;
 
-  constructor(repoDir: string) {
-    this.repoDir = repoDir;
-    this.dir = join(repoDir, ".diff-review");
+  constructor(repoSlug: string, baseDir?: string) {
+    const root = baseDir ?? join(homedir(), ".diff-review");
+    this.dir = join(root, "reviews", repoSlug);
   }
 
   async ensureDir(): Promise<void> {
     await mkdir(this.dir, { recursive: true });
-
-    const gitignorePath = join(this.repoDir, ".gitignore");
-    try {
-      const content = await readFile(gitignorePath, "utf-8");
-      if (!content.includes(".diff-review/")) {
-        await writeFile(gitignorePath, content.trimEnd() + "\n.diff-review/\n");
-      }
-    } catch (e: any) {
-      if (e.code === "ENOENT") {
-        await writeFile(gitignorePath, ".diff-review/\n");
-      } else {
-        throw e;
-      }
-    }
   }
 
   reviewFilePath(base: string, head: string): string {
