@@ -81,7 +81,8 @@ export function matchBlocks(
     }
   }
 
-  // Pass 3: Formatting-only — entire file normalized content matches but raw differs
+  // Pass 3: Formatting-only detection
+  // Check whole file first
   if (
     oldSource !== newSource &&
     normalizeWhitespace(oldSource) === normalizeWhitespace(newSource)
@@ -91,6 +92,35 @@ export function matchBlocks(
       label: "Formatting-only change",
       details: "File content is identical after normalizing whitespace",
     });
+  } else {
+    // Per-block: find matched blocks (same name+type, same position) whose raw text
+    // differs but normalized text is identical
+    for (let i = 0; i < oldBlocks.length; i++) {
+      if (matchedOldIndices.has(i)) continue;
+      for (let j = 0; j < newBlocks.length; j++) {
+        if (matchedNewIndices.has(j)) continue;
+        const ob = oldBlocks[i];
+        const nb = newBlocks[j];
+        if (
+          ob.name === nb.name &&
+          ob.type === nb.type &&
+          ob.source !== nb.source &&
+          normalizeWhitespace(ob.source) === normalizeWhitespace(nb.source)
+        ) {
+          changes.push({
+            type: "formatting",
+            label: `\`${ob.name}\` formatting-only`,
+            oldStartLine: ob.startLine,
+            oldEndLine: ob.endLine,
+            newStartLine: nb.startLine,
+            newEndLine: nb.endLine,
+          });
+          matchedOldIndices.add(i);
+          matchedNewIndices.add(j);
+          break;
+        }
+      }
+    }
   }
 
   return changes;

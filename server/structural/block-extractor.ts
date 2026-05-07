@@ -8,7 +8,6 @@ const NAMED_NODE_TYPES = new Set([
   "class_declaration",
   "arrow_function",
   "variable_declarator",
-  "export_statement",
   "function_definition",
   "class_definition",
   "method_declaration",

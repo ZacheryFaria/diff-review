@@ -110,13 +110,16 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
   const [loadingStructural, setLoadingStructural] = useState(false);
 
   useEffect(() => {
-    if (!structuralMode) return;
-    if (structuralData) return;
+    setStructuralData(null);
+  }, [base, head]);
+
+  useEffect(() => {
+    if (!structuralMode || structuralData) return;
     setLoadingStructural(true);
     getStructuralDiff(fileName, base, head)
       .then(setStructuralData)
       .finally(() => setLoadingStructural(false));
-  }, [structuralMode]);
+  }, [structuralMode, structuralData, fileName, base, head]);
 
   const reviewed = !!reviewedState;
   const reviewedStale = reviewed && !reviewedState!.fresh;
@@ -336,11 +339,6 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
               </span>
               <span style={{ color: "var(--text-primary)" }}>{change.label}</span>
               {change.details && <span style={{ color: "var(--text-secondary)" }}>{change.details}</span>}
-              {change.newStartLine && (
-                <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
-                  line {change.oldStartLine} → {change.newStartLine}
-                </span>
-              )}
             </div>
           ))}
         </div>
