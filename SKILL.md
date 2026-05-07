@@ -151,6 +151,24 @@ curl -s -X PATCH http://localhost:<port>/api/agent/comments/resolve \
 curl -s -X POST http://localhost:<port>/api/agent/shutdown
 ```
 
+## Structural Diff (AST Analysis)
+
+diff-review includes an AST-aware structural diff powered by tree-sitter. Users can toggle it per-file via the "AST" button in the file header. When enabled, it detects:
+
+- **Moved blocks** — functions/classes that moved position but are otherwise unchanged
+- **Renamed symbols** — blocks whose identifier changed but body is >80% similar
+- **Formatting-only changes** — blocks (or whole files) where only whitespace differs
+
+The structural diff API endpoint:
+
+```bash
+curl -s "http://localhost:<port>/api/structural-diff?file=src/foo.ts&base=main&head=feature"
+```
+
+Returns `{ "supported": true, "changes": [...] }` or `{ "supported": false, "reason": "..." }`.
+
+Supported languages: JS, TS, JSX, TSX, Python, Go, Rust, CSS, HTML, JSON, YAML, Bash, SQL, C, C++, Java, Ruby, PHP, Swift, Kotlin.
+
 ## Staleness
 
 Each comment has a `freshness` field when fetched from the API:

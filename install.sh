@@ -9,6 +9,9 @@ pnpm install
 echo "Building..."
 pnpm run build
 
+echo "Ensuring grammars directory exists..."
+mkdir -p grammars
+
 BIN_DIR="${HOME}/bin"
 mkdir -p "$BIN_DIR"
 
