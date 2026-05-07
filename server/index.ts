@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { branchesRouter } from "./routes/branches.js";
 import { diffRouter } from "./routes/diff.js";
 import { commentsRouter } from "./routes/comments.js";
+import { structuralDiffRouter } from "./routes/structural-diff.js";
 import { Storage } from "./storage.js";
 import { getRepoRoot } from "./git.js";
 
@@ -21,6 +22,7 @@ export async function createApp(repoDir: string): Promise<Express> {
   app.use("/api", branchesRouter);
   app.use("/api", diffRouter);
   app.use("/api", commentsRouter);
+  app.use("/api", structuralDiffRouter);
 
   const __dirname = fileURLToPath(new URL(".", import.meta.url));
   const clientDir = resolve(__dirname, "../client");
