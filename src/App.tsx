@@ -1,10 +1,23 @@
 import { useState, useEffect } from "react";
-import { getBranches, getFiles } from "./api";
+import { useQueryClient } from "@tanstack/react-query";
+import { getBranches } from "./api";
 import { FileTree } from "./components/Sidebar/FileTree";
 import { PreferencesModal } from "./components/PreferencesModal";
-import { useDiff } from "./hooks/useDiff";
-import { useComments } from "./hooks/useComments";
-import { usePreferences } from "./hooks/usePreferences";
+import {
+  useDiffQuery,
+  useFilesQuery,
+  useCommentsQuery,
+  useMarkReviewedMutation,
+  useUnmarkReviewedMutation,
+  useAddCommentMutation,
+  useResolveCommentMutation,
+  useReopenCommentMutation,
+  useDeleteCommentMutation,
+  usePreferencesQuery,
+  useAddIgnorePatternMutation,
+  useRemoveIgnorePatternMutation,
+  reviewKeys,
+} from "./hooks/queries";
 import { DiffView } from "./components/DiffView/DiffView";
 
 function getInitialParam(key: string, fallback: string): string {
@@ -17,19 +30,36 @@ export function App() {
   const [current, setCurrent] = useState("");
   const [base, setBase] = useState(() => getInitialParam("base", "main"));
   const [head, setHead] = useState(() => getInitialParam("head", ""));
-  const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [showPreferences, setShowPreferences] = useState(false);
-  const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError, refresh: refreshDiff } = useDiff(base, head);
-  const { comments, addComment, resolveComment, reopenComment, removeComment, reviewedFiles, markReviewed, unmarkReviewed, refresh: refreshComments } = useComments(base, head);
-  const { patterns, isIgnored, addPattern, removePattern } = usePreferences();
+
+  const queryClient = useQueryClient();
+
+  const diffQuery = useDiffQuery(base, head);
+  const filesQuery = useFilesQuery(base, head);
+  const commentsQuery = useCommentsQuery(base, head);
+  const { patterns, isIgnored } = usePreferencesQuery();
+
+  const addCommentMutation = useAddCommentMutation(base, head);
+  const resolveCommentMutation = useResolveCommentMutation(base, head);
+  const reopenCommentMutation = useReopenCommentMutation(base, head);
+  const deleteCommentMutation = useDeleteCommentMutation(base, head);
+  const markReviewedMutation = useMarkReviewedMutation(base, head);
+  const unmarkReviewedMutation = useUnmarkReviewedMutation(base, head);
+  const addPatternMutation = useAddIgnorePatternMutation();
+  const removePatternMutation = useRemoveIgnorePatternMutation();
+
+  const diff = diffQuery.data?.diff ?? "";
+  const baseCommit = diffQuery.data?.baseCommit ?? "";
+  const headCommit = diffQuery.data?.headCommit ?? "";
+  const diffLoading = diffQuery.isLoading;
+  const diffError = diffQuery.error?.message ?? null;
+  const comments = commentsQuery.data?.comments ?? [];
+  const reviewedFiles = commentsQuery.data?.reviewedFiles ?? {};
+  const files = filesQuery.data ?? [];
 
   const handleRefresh = () => {
-    refreshDiff();
-    refreshComments();
-    if (base && head && base !== head) {
-      getFiles(base, head).then(({ files }) => setFiles(files));
-    }
+    queryClient.invalidateQueries({ queryKey: reviewKeys.all });
   };
 
   const openComments = comments.filter(c => c.status === "open");
@@ -59,14 +89,6 @@ export function App() {
       }
     });
   }, []);
-
-  useEffect(() => {
-    if (base && head && base !== head) {
-      getFiles(base, head).then(({ files }) => setFiles(files));
-    } else {
-      setFiles([]);
-    }
-  }, [base, head]);
 
   useEffect(() => {
     if (base && head) {
@@ -125,8 +147,8 @@ export function App() {
             files={files}
             activeFile={activeFile}
             isIgnored={isIgnored}
-            onIgnoreFile={(file) => addPattern(file, "repo")}
-            onUnignoreFile={(file) => removePattern(file, "repo")}
+            onIgnoreFile={(file) => addPatternMutation.mutate({ pattern: file, scope: "repo" })}
+            onUnignoreFile={(file) => removePatternMutation.mutate({ pattern: file, scope: "repo" })}
             onFileClick={(file) => {
               setActiveFile(file);
               window.history.replaceState(null, "", `?${new URLSearchParams({ base, head })}#${encodeURIComponent(file)}`);
@@ -156,7 +178,7 @@ export function App() {
           {openComments.length} open {openComments.length === 1 ? "comment" : "comments"}
         </button>
       )}
-      <main style={{ flex: 1, overflow: "auto", padding: 16 }}>
+      <main style={{ flex: 1, overflow: "auto", padding: "0 16px 16px" }}>
         {base && head && base !== head ? (
           diffLoading ? (
             <p style={{ color: "var(--text-secondary)" }}>Loading diff...</p>
@@ -172,13 +194,13 @@ export function App() {
               base={base}
               head={head}
               comments={comments}
-              onAddComment={addComment}
-              onResolve={resolveComment}
-              onReopen={reopenComment}
-              onDelete={removeComment}
+              onAddComment={(data) => addCommentMutation.mutateAsync(data)}
+              onResolve={(id) => resolveCommentMutation.mutate(id)}
+              onReopen={(id) => reopenCommentMutation.mutate(id)}
+              onDelete={(id) => deleteCommentMutation.mutate(id)}
               reviewedFiles={reviewedFiles}
-              onMarkReviewed={markReviewed}
-              onUnmarkReviewed={unmarkReviewed}
+              onMarkReviewed={(file) => markReviewedMutation.mutateAsync(file)}
+              onUnmarkReviewed={(file) => unmarkReviewedMutation.mutateAsync(file)}
               onRefresh={handleRefresh}
               isIgnored={isIgnored}
             />
@@ -190,8 +212,8 @@ export function App() {
       {showPreferences && (
         <PreferencesModal
           patterns={patterns}
-          onAdd={addPattern}
-          onRemove={removePattern}
+          onAdd={(p, s) => addPatternMutation.mutate({ pattern: p, scope: s })}
+          onRemove={(p, s) => removePatternMutation.mutate({ pattern: p, scope: s })}
           onClose={() => setShowPreferences(false)}
         />
       )}
