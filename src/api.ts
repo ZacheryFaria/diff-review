@@ -87,3 +87,23 @@ export async function unmarkFileReviewed(file: string, base: string, head: strin
     body: JSON.stringify({ base, head }),
   });
 }
+
+export async function getPreferences(): Promise<{ global: string[]; repo: string[] }> {
+  return fetchJson(`${BASE}/preferences`);
+}
+
+export async function addIgnorePattern(pattern: string, scope: "global" | "repo"): Promise<void> {
+  return fetchJson(`${BASE}/preferences/ignore`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pattern, scope }),
+  });
+}
+
+export async function removeIgnorePattern(pattern: string, scope: "global" | "repo"): Promise<void> {
+  return fetchJson(`${BASE}/preferences/ignore`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pattern, scope }),
+  });
+}
