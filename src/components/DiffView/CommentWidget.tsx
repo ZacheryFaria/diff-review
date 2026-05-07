@@ -51,6 +51,20 @@ export function CommentWidget({ comment, freshness, onResolve, onReopen, onDelet
             Orphaned
           </span>
         )}
+        {(comment as any).source && (comment as any).source !== "human" && (
+          <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            padding: "1px 6px",
+            borderRadius: 3,
+            background: "rgba(99, 102, 241, 0.15)",
+            color: "#818cf8",
+            border: "1px solid #818cf8",
+            letterSpacing: "0.03em",
+          }}>
+            {(comment as any).source}
+          </span>
+        )}
       </div>
       {freshness === "orphaned" && comment.anchor.context.length > 0 && (
         <pre style={{
