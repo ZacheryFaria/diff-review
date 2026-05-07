@@ -46,6 +46,7 @@
   "files": [
     "bin/",
     "dist/",
+    "grammars/",
     "schema.json"
   ]
 }
