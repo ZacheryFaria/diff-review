@@ -157,6 +157,11 @@ table.diff colgroup {
 .diff-code .token.attr-name { color: #79c0ff !important; }
 .diff-code .token.attr-value { color: #a5d6ff !important; }
 
+/* Structural diff: dim lines that are move/rename/formatting-only */
+.structural-only td {
+  opacity: 0.3;
+}
+
 .diff-widget {
   background: transparent;
 }

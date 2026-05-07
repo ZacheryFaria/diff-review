@@ -1,10 +1,10 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
 import type { CommentWithFreshness } from "../../api";
 import type { ReviewedFileState } from "../../api";
-import { getStructuralDiff, type StructuralDiffResponse } from "../../api";
+import { getStructuralDiff, type StructuralDiffResponse, type StructuralChange } from "../../api";
 import { refractor, getLanguage } from "../../languages";
 import { CommentWidget } from "./CommentWidget";
 import { CommentInput } from "../CommentInput";
@@ -97,6 +97,33 @@ function buildWidgets(
   return widgets;
 }
 
+function buildStructuralLineSet(changes: StructuralChange[]): { oldLines: Set<number>; newLines: Set<number> } {
+  const oldLines = new Set<number>();
+  const newLines = new Set<number>();
+  for (const c of changes) {
+    if (c.oldStartLine != null && c.oldEndLine != null) {
+      for (let i = c.oldStartLine; i <= c.oldEndLine; i++) oldLines.add(i);
+    }
+    if (c.newStartLine != null && c.newEndLine != null) {
+      for (let i = c.newStartLine; i <= c.newEndLine; i++) newLines.add(i);
+    }
+  }
+  return { oldLines, newLines };
+}
+
+function isStructuralOnlyChange(change: ChangeData, oldLines: Set<number>, newLines: Set<number>): boolean {
+  if (change.type === "delete") {
+    return oldLines.has((change as { lineNumber: number }).lineNumber);
+  }
+  if (change.type === "insert") {
+    return newLines.has((change as { lineNumber: number }).lineNumber);
+  }
+  // normal line — check both sides
+  const oldLn = (change as { oldLineNumber: number }).oldLineNumber;
+  const newLn = (change as { newLineNumber: number }).newLineNumber;
+  return oldLines.has(oldLn) || newLines.has(newLn);
+}
+
 export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, reviewedState, onMarkReviewed, onUnmarkReviewed, base, head }: DiffFileProps) {
   const { type, hunks, oldPath, newPath } = fileData;
   const fileName = newPath || oldPath || "unknown";
@@ -183,6 +210,22 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
   };
 
   const handleFileCommentCancel = () => setShowFileCommentInput(false);
+
+  const structuralLineSets = useMemo(() => {
+    if (!structuralMode || !structuralData?.supported || !structuralData.changes?.length) return null;
+    return buildStructuralLineSet(structuralData.changes);
+  }, [structuralMode, structuralData]);
+
+  const generateLineClassName = useMemo(() => {
+    if (!structuralLineSets) return undefined;
+    return ({ changes }: { changes: ChangeData[]; defaultGenerate: () => string }) => {
+      const change = changes[0];
+      if (change && isStructuralOnlyChange(change, structuralLineSets.oldLines, structuralLineSets.newLines)) {
+        return "structural-only";
+      }
+      return undefined;
+    };
+  }, [structuralLineSets]);
 
   const widgets = buildWidgets(
     hunks,
@@ -354,6 +397,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
             hunks={hunks}
             tokens={tokens ?? null}
             widgets={widgets}
+            generateLineClassName={generateLineClassName}
             gutterEvents={{ onClick: (info: any, e: any) => handleGutterClick(info, e) }}
           >
             {hunks => hunks.map(hunk => <Hunk key={hunk.content} hunk={hunk} />)}

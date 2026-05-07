@@ -2,7 +2,7 @@ import { resolve, dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { createRequire } from "module";
 import { existsSync } from "fs";
-import { Parser, Language } from "web-tree-sitter";
+import Parser from "web-tree-sitter";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -45,17 +45,15 @@ async function ensureInit(): Promise<void> {
   initialized = true;
 }
 
-const languageCache = new Map<string, Language>();
+const languageCache = new Map<string, Parser.Language>();
 
 function findWasmPath(grammarName: string): string | null {
-  // Resolve via Node's module resolution (works regardless of CWD or dist/ layout)
   try {
     const wasmsDir = dirname(require.resolve("tree-sitter-wasms/package.json"));
     const wasmsPkg = join(wasmsDir, "out", `tree-sitter-${grammarName}.wasm`);
     if (existsSync(wasmsPkg)) return wasmsPkg;
   } catch {}
 
-  // Fallback: local grammars/ directory at project root
   const local = resolve(__dirname, "../../grammars/tree-sitter-" + grammarName + ".wasm");
   if (existsSync(local)) return local;
 
@@ -64,7 +62,7 @@ function findWasmPath(grammarName: string): string | null {
 
 export async function getLanguageForFile(
   fileName: string
-): Promise<Language | null> {
+): Promise<Parser.Language | null> {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
   const grammarName = EXTENSION_TO_GRAMMAR[ext];
   if (!grammarName) return null;
@@ -76,7 +74,7 @@ export async function getLanguageForFile(
   const wasmPath = findWasmPath(grammarName);
   if (!wasmPath) return null;
 
-  const language = await Language.load(wasmPath);
+  const language = await Parser.Language.load(wasmPath);
   languageCache.set(grammarName, language);
   return language;
 }

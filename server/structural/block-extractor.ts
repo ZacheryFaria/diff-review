@@ -1,6 +1,8 @@
 import { createHash } from "crypto";
-import type { Tree, Node as SyntaxNode } from "web-tree-sitter";
+import type Parser from "web-tree-sitter";
 import type { Block } from "./types.js";
+
+type SyntaxNode = Parser.SyntaxNode;
 
 const NAMED_NODE_TYPES = new Set([
   "function_declaration",
@@ -72,7 +74,7 @@ function walk(node: SyntaxNode, blocks: Block[]): void {
   }
 }
 
-export function extractBlocks(tree: Tree, _source: string): Block[] {
+export function extractBlocks(tree: Parser.Tree, _source: string): Block[] {
   const blocks: Block[] = [];
   walk(tree.rootNode, blocks);
   return blocks;
