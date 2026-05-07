@@ -19,11 +19,14 @@ interface DiffViewProps {
   onMarkReviewed: (file: string) => Promise<void>;
   onUnmarkReviewed: (file: string) => Promise<void>;
   onRefresh: () => void;
+  isIgnored?: (file: string) => boolean;
 }
 
-export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete, reviewedFiles, onMarkReviewed, onUnmarkReviewed, onRefresh }: DiffViewProps) {
+export function DiffView({ diffText, baseCommit, headCommit, base, head, comments, onAddComment, onResolve, onReopen, onDelete, reviewedFiles, onMarkReviewed, onUnmarkReviewed, onRefresh, isIgnored }: DiffViewProps) {
   const [viewType, setViewType] = useState<"unified" | "split">("split");
-  const files = parseDiff(diffText, { nearbySequences: "zip" }).filter(f => f.newPath || f.oldPath);
+  const files = parseDiff(diffText, { nearbySequences: "zip" })
+    .filter(f => f.newPath || f.oldPath)
+    .filter(f => !isIgnored || !isIgnored(f.newPath || f.oldPath || ""));
 
   // suppress unused variable warnings for baseCommit/headCommit (used by parent for display)
   void baseCommit;

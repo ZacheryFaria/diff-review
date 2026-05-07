@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { getBranches, getFiles } from "./api";
 import { FileTree } from "./components/Sidebar/FileTree";
+import { PreferencesModal } from "./components/PreferencesModal";
 import { useDiff } from "./hooks/useDiff";
 import { useComments } from "./hooks/useComments";
+import { usePreferences } from "./hooks/usePreferences";
 import { DiffView } from "./components/DiffView/DiffView";
 
 function getInitialParam(key: string, fallback: string): string {
@@ -17,8 +19,10 @@ export function App() {
   const [head, setHead] = useState(() => getInitialParam("head", ""));
   const [files, setFiles] = useState<{ file: string; additions: number; deletions: number }[]>([]);
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [showPreferences, setShowPreferences] = useState(false);
   const { diff, baseCommit, headCommit, loading: diffLoading, error: diffError, refresh: refreshDiff } = useDiff(base, head);
   const { comments, addComment, resolveComment, reopenComment, removeComment, reviewedFiles, markReviewed, unmarkReviewed, refresh: refreshComments } = useComments(base, head);
+  const { patterns, isIgnored, addPattern, removePattern } = usePreferences();
 
   const handleRefresh = () => {
     refreshDiff();
@@ -41,8 +45,8 @@ export function App() {
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const urlBase = urlParams.get("base");
     const urlHead = urlParams.get("head");
+    const urlBase = urlParams.get("base");
 
     getBranches().then(({ branches, current }) => {
       setBranches(branches);
@@ -81,14 +85,25 @@ export function App() {
     }
   }, [diffLoading, diff]);
 
-  // suppress unused variable warning — current is set but only used for initial head state
   void current;
 
   return (
     <>
       <aside style={{ width: 300, borderRight: "1px solid var(--border)", overflow: "auto" }}>
         <div style={{ padding: 16 }}>
-          <h2 style={{ fontSize: 14, marginBottom: 12, color: "var(--text-secondary)" }}>diff-review</h2>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+            <h2 style={{ fontSize: 14, margin: 0, color: "var(--text-secondary)" }}>diff-review</h2>
+            <button
+              onClick={() => setShowPreferences(true)}
+              title="Preferences"
+              style={{
+                background: "none", border: "none", color: "var(--text-secondary)",
+                cursor: "pointer", fontSize: 16, padding: "2px 6px", borderRadius: 4,
+              }}
+            >
+              ⚙
+            </button>
+          </div>
           <div>
             <label style={{ fontSize: 12, color: "var(--text-secondary)" }}>Base</label>
             <select value={base} onChange={e => setBase(e.target.value)}
@@ -109,6 +124,9 @@ export function App() {
           <FileTree
             files={files}
             activeFile={activeFile}
+            isIgnored={isIgnored}
+            onIgnoreFile={(file) => addPattern(file, "repo")}
+            onUnignoreFile={(file) => removePattern(file, "repo")}
             onFileClick={(file) => {
               setActiveFile(file);
               window.history.replaceState(null, "", `?${new URLSearchParams({ base, head })}#${encodeURIComponent(file)}`);
@@ -162,12 +180,21 @@ export function App() {
               onMarkReviewed={markReviewed}
               onUnmarkReviewed={unmarkReviewed}
               onRefresh={handleRefresh}
+              isIgnored={isIgnored}
             />
           )
         ) : (
           <p style={{ color: "var(--text-secondary)" }}>Select two different branches to compare</p>
         )}
       </main>
+      {showPreferences && (
+        <PreferencesModal
+          patterns={patterns}
+          onAdd={addPattern}
+          onRemove={removePattern}
+          onClose={() => setShowPreferences(false)}
+        />
+      )}
     </>
   );
 }
