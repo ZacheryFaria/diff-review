@@ -1,36 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
-// @ts-expect-error refractor v3 has no type declarations
-import refractor from "refractor";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
 import type { CommentWithFreshness } from "../../hooks/useComments";
 import type { ReviewedFileState } from "../../api";
+import { refractor, getLanguage } from "../../languages";
 import { CommentWidget } from "./CommentWidget";
 import { CommentInput } from "../CommentInput";
-
-function getLanguage(fileName: string): string {
-  const ext = fileName.split(".").pop() ?? "";
-  const map: Record<string, string> = {
-    ts: "typescript",
-    tsx: "tsx",
-    js: "javascript",
-    jsx: "jsx",
-    py: "python",
-    go: "go",
-    rs: "rust",
-    json: "json",
-    css: "css",
-    html: "html",
-    md: "markdown",
-    yaml: "yaml",
-    yml: "yaml",
-    sh: "bash",
-    sql: "sql",
-    proto: "protobuf",
-  };
-  return map[ext] ?? "text";
-}
 
 interface PendingComment {
   file: string;
