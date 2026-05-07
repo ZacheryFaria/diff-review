@@ -1,36 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Diff, Hunk, tokenize, markEdits, getChangeKey } from "react-diff-view";
 import "react-diff-view/style/index.css";
-// @ts-expect-error refractor v3 has no type declarations
-import refractor from "refractor";
 import type { FileData, HunkData, ChangeData } from "react-diff-view";
 import type { CommentWithFreshness } from "../../hooks/useComments";
 import type { ReviewedFileState } from "../../api";
+import { getStructuralDiff, type StructuralDiffResponse } from "../../api";
+import { refractor, getLanguage } from "../../languages";
 import { CommentWidget } from "./CommentWidget";
 import { CommentInput } from "../CommentInput";
-
-function getLanguage(fileName: string): string {
-  const ext = fileName.split(".").pop() ?? "";
-  const map: Record<string, string> = {
-    ts: "typescript",
-    tsx: "tsx",
-    js: "javascript",
-    jsx: "jsx",
-    py: "python",
-    go: "go",
-    rs: "rust",
-    json: "json",
-    css: "css",
-    html: "html",
-    md: "markdown",
-    yaml: "yaml",
-    yml: "yaml",
-    sh: "bash",
-    sql: "sql",
-    proto: "protobuf",
-  };
-  return map[ext] ?? "text";
-}
 
 interface PendingComment {
   file: string;
@@ -50,6 +27,8 @@ interface DiffFileProps {
   reviewedState?: ReviewedFileState;
   onMarkReviewed: () => Promise<void>;
   onUnmarkReviewed: () => Promise<void>;
+  base: string;
+  head: string;
 }
 
 function findChangeForLine(
@@ -118,7 +97,7 @@ function buildWidgets(
   return widgets;
 }
 
-export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, reviewedState, onMarkReviewed, onUnmarkReviewed }: DiffFileProps) {
+export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, reviewedState, onMarkReviewed, onUnmarkReviewed, base, head }: DiffFileProps) {
   const { type, hunks, oldPath, newPath } = fileData;
   const fileName = newPath || oldPath || "unknown";
   const language = getLanguage(fileName);
@@ -126,6 +105,18 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
   const [lastClickedLine, setLastClickedLine] = useState<{ line: number; side: "old" | "new" } | null>(null);
   const [showFileCommentInput, setShowFileCommentInput] = useState(false);
   const [collapsed, setCollapsed] = useState(!!reviewedState?.fresh);
+  const [structuralMode, setStructuralMode] = useState(false);
+  const [structuralData, setStructuralData] = useState<StructuralDiffResponse | null>(null);
+  const [loadingStructural, setLoadingStructural] = useState(false);
+
+  useEffect(() => {
+    if (!structuralMode) return;
+    if (structuralData) return;
+    setLoadingStructural(true);
+    getStructuralDiff(fileName, base, head)
+      .then(setStructuralData)
+      .finally(() => setLoadingStructural(false));
+  }, [structuralMode]);
 
   const reviewed = !!reviewedState;
   const reviewedStale = reviewed && !reviewedState!.fresh;
@@ -251,6 +242,23 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
         >{fileName}</span>
         <span style={{ flex: 1 }} />
         <button
+          onClick={e => { e.stopPropagation(); setStructuralMode(v => !v); }}
+          title="Toggle structural diff"
+          style={{
+            background: structuralMode ? "var(--accent)" : "none",
+            border: "1px solid var(--border)",
+            borderRadius: 4,
+            color: structuralMode ? "white" : "var(--text-secondary)",
+            cursor: "pointer",
+            fontSize: 11,
+            padding: "1px 7px",
+            fontFamily: "sans-serif",
+            lineHeight: 1.6,
+          }}
+        >
+          AST
+        </button>
+        <button
           onClick={e => { e.stopPropagation(); setShowFileCommentInput(v => !v); }}
           title="Comment on file"
           style={{
@@ -299,6 +307,42 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
           {showFileCommentInput && (
             <CommentInput onSubmit={handleFileCommentSubmit} onCancel={handleFileCommentCancel} />
           )}
+        </div>
+      )}
+      {structuralMode && !collapsed && (
+        <div style={{ padding: "8px 12px", background: "var(--bg-secondary)", borderBottom: "1px solid var(--border)", fontSize: 12 }}>
+          {loadingStructural && <span style={{ color: "var(--text-secondary)" }}>Analyzing...</span>}
+          {structuralData && !structuralData.supported && (
+            <span style={{ color: "var(--text-secondary)" }}>{structuralData.reason}</span>
+          )}
+          {structuralData && structuralData.supported && structuralData.changes && structuralData.changes.length === 0 && (
+            <span style={{ color: "var(--text-secondary)" }}>No structural changes detected</span>
+          )}
+          {structuralData && structuralData.supported && structuralData.changes && structuralData.changes.map((change, i) => (
+            <div key={i} style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{
+                padding: "1px 6px",
+                borderRadius: 3,
+                fontSize: 11,
+                fontWeight: 500,
+                background: change.type === "moved" ? "rgba(88, 166, 255, 0.2)" :
+                           change.type === "renamed" ? "rgba(210, 168, 255, 0.2)" :
+                           "rgba(139, 148, 158, 0.2)",
+                color: change.type === "moved" ? "var(--accent)" :
+                       change.type === "renamed" ? "#d2a8ff" :
+                       "var(--text-secondary)",
+              }}>
+                {change.type}
+              </span>
+              <span style={{ color: "var(--text-primary)" }}>{change.label}</span>
+              {change.details && <span style={{ color: "var(--text-secondary)" }}>{change.details}</span>}
+              {change.newStartLine && (
+                <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
+                  line {change.oldStartLine} → {change.newStartLine}
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       )}
       {!collapsed && (

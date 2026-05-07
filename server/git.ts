@@ -66,3 +66,7 @@ export async function getFileStats(repoDir: string, base: string, head: string):
     };
   });
 }
+
+export async function getFileAtRef(repoDir: string, ref: string, filePath: string): Promise<string> {
+  return run(repoDir, "show", `${ref}:${filePath}`);
+}

@@ -18,6 +18,8 @@
     "express": "^4.21.0",
     "open": "^10.1.0",
     "picomatch": "^4.0.4",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.26.8",
     "yargs": "^17.7.0"
   },
   "devDependencies": {
@@ -44,6 +46,7 @@
   "files": [
     "bin/",
     "dist/",
+    "grammars/",
     "schema.json"
   ]
 }

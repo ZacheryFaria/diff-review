@@ -8,6 +8,7 @@ import { diffRouter } from "./routes/diff.js";
 import { commentsRouter } from "./routes/comments.js";
 import { agentRouter } from "./routes/agent.js";
 import { preferencesRouter } from "./routes/preferences.js";
+import { structuralDiffRouter } from "./routes/structural-diff.js";
 import { Storage } from "./storage.js";
 import { Preferences } from "./preferences.js";
 import { InstanceRegistry } from "./instance-registry.js";
@@ -36,6 +37,7 @@ export async function createApp(repoDir: string, baseDir?: string): Promise<Expr
   app.use("/api", commentsRouter);
   app.use("/api/agent", agentRouter);
   app.use("/api/preferences", preferencesRouter);
+  app.use("/api", structuralDiffRouter);
 
   const __dirname = fileURLToPath(new URL(".", import.meta.url));
   const clientDir = resolve(__dirname, "../client");

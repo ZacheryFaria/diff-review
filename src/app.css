@@ -150,6 +150,12 @@ table.diff colgroup {
 .diff-code .token.class-name { color: #ffa657 !important; }
 .diff-code .token.builtin { color: #ffa657 !important; }
 .diff-code .token.punctuation { color: #c9d1d9 !important; }
+.diff-code .token.property { color: #79c0ff !important; }
+.diff-code .token.selector { color: #7ee787 !important; }
+.diff-code .token.atrule { color: #d2a8ff !important; }
+.diff-code .token.tag { color: #7ee787 !important; }
+.diff-code .token.attr-name { color: #79c0ff !important; }
+.diff-code .token.attr-value { color: #a5d6ff !important; }
 
 .diff-widget {
   background: transparent;
