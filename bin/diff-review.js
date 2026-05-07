@@ -9,8 +9,7 @@ const argv = yargs(hideBin(process.argv))
   .option("port", {
     alias: "p",
     type: "number",
-    default: 3142,
-    describe: "Port to run the server on",
+    describe: "Port to run the server on (default: random available port)",
   })
   .option("repo", {
     alias: "r",
@@ -25,14 +24,8 @@ const argv = yargs(hideBin(process.argv))
   })
   .parseSync();
 
-const port = argv.port;
-const repo = argv.repo;
-
-startServer(repo, port).then(() => {
+startServer(argv.repo, argv.port).then(({ port }) => {
   if (!argv["no-open"]) {
     open(`http://localhost:${port}`);
   }
 });
-
-process.on("SIGINT", () => process.exit(0));
-process.on("SIGTERM", () => process.exit(0));
