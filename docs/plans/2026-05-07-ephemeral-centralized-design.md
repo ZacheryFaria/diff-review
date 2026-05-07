@@ -114,12 +114,62 @@ Merge: union of global + repo-specific patterns. Glob matching via `picomatch` o
 - **Context menu:** right-click file → "Ignore this file" (exact path) or "Ignore files matching..." (glob input)
 - **Gear icon modal:** two sections (Global / Repo), each with add/remove pattern controls
 
+## Implementation Details
+
+### Repo Slug Resolution
+
+1. Parse git remote `origin` URL via `git remote get-url origin`
+2. SSH format (`git@host:org/repo`) → extract host and path
+3. HTTPS format → extract host + pathname via `new URL()`
+4. Strip `.git` suffix
+5. Sanitize: replace `/`, `:`, `@` with `-`
+6. Fallback to `basename(cwd)` if no remote
+
+### Storage Class Rewrite
+
+Constructor: `Storage(repoSlug: string, baseDir?: string)` — baseDir defaults to `~/.diff-review`.
+
+Review file path: `<baseDir>/reviews/<slug>/<base>..<head>.json` (slashes in branch names replaced with `-`).
+
+Validates via AJV against `schema.json` on both load and save. Returns `null` for missing files.
+
+### Instance Registry
+
+- `register(slug, { port, pid, repoPath })` — writes `<baseDir>/instances/<slug>.json` with `startedAt` timestamp
+- `lookup(slug)` — reads instance file, returns null if ENOENT
+- `unregister(slug)` — deletes instance file
+- `isAlive(slug)` — lookup + `process.kill(pid, 0)` to check if PID is alive
+
+### CLI Entry Point
+
+Uses `yargs` for CLI parsing with options: `--port` (optional, default random), `--repo` (default `.`), `--no-open`.
+
+Calls `startServer()` which checks the instance registry before spawning. Opens browser via `open` package unless `--no-open`.
+
+SIGINT/SIGTERM handlers unregister the instance before exiting.
+
+### Agent Comment ID Generation
+
+Format: `c_<timestamp>_<6 hex chars from randomBytes(3)>`
+
+### Frontend Preferences Hook
+
+`usePreferences()` returns `{ patterns, isIgnored, addPattern, removePattern, refresh }`.
+
+`isIgnored` uses `picomatch.isMatch(filePath, allPatterns)` where allPatterns is the union of global + repo patterns.
+
+### Comment Source Badge Styling
+
+Agent-sourced comments get a small inline badge (indigo color scheme: `#818cf8` text, `rgba(99, 102, 241, 0.15)` background) showing the source value.
+
+---
+
 ## Changes to Existing Code
 
 ### Storage class
 - Read/write from `~/.diff-review/reviews/<repo-slug>/`
 - Remove `.gitignore` auto-append logic
-- Add repo slug resolution
+- New constructor: `Storage(repoSlug, baseDir?)`
 
 ### Schema
 - Add optional `source: string` field to Comment
@@ -134,8 +184,18 @@ Merge: union of global + repo-specific patterns. Glob matching via `picomatch` o
 - Mount `/api/preferences` router
 
 ### Frontend
-- `FileTree.tsx`: ignore filtering + collapsed "N ignored" section
+- `FileTree.tsx`: ignore filtering + collapsed "N ignored" section + context menu
 - `App.tsx`: gear icon + preferences modal
-- New `PreferencesModal` component
-- Context menu on file entries
+- New `PreferencesModal` component (modal with global/repo sections, add/remove controls)
+- New `usePreferences` hook (picomatch-based glob matching)
 - Badge agent-sourced comments in `CommentWidget.tsx`
+
+## Tech Choices
+
+| Concern | Choice | Rationale |
+|---------|--------|-----------|
+| Stack | Node.js, Express, React 18, Vite, TypeScript | Existing |
+| Glob matching | `picomatch` | Small, fast, standard glob syntax |
+| Schema validation | AJV + ajv-formats | Already in use |
+| CLI parsing | `yargs` | Already in use |
+| Browser opening | `open` | Already in use |

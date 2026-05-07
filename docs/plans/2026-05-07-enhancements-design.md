@@ -98,11 +98,48 @@ Three enhancements to the diff-review tool:
 
 ---
 
+## Implementation Details
+
+### Syntax Highlighting — Grammar Registration
+
+Languages to register with refractor: css, scss, less, javascript, typescript, jsx, tsx, python, go, rust, json, markup, markdown, yaml, bash, sql, protobuf, graphql, docker, toml, java, c, cpp, ruby, php, swift, kotlin.
+
+Extension map additions beyond those already supported: `scss`, `less`, `html`/`xml`/`svg` → markup, `md` → markdown, `sh`/`bash`/`zsh` → bash, `proto` → protobuf, `graphql`/`gql`, `dockerfile` → docker, `toml`, `java`, `c`/`h`, `cpp`/`hpp`/`cc`, `rb`, `php`, `swift`, `kt`/`kts`.
+
+Additional CSS token styles needed: `.token.property`, `.token.selector`, `.token.atrule`, `.token.tag`, `.token.attr-name`, `.token.attr-value`.
+
+### File Tree — Sorting and State
+
+- Sort: directories first, then alphabetical within each group
+- Expand state: `Set<string>` of expanded paths; auto-expand ancestors of the active file on selection change (merge, don't replace, so user-expanded paths stay open)
+- Flatten single-child directories into one node (e.g. `src/components/` instead of nested `src` → `components`)
+
+### Structural Diff — Block Extraction
+
+Target AST node types:
+- JS/TS: `function_declaration`, `method_definition`, `class_declaration`, `arrow_function`, `variable_declarator`, `export_statement`
+- Python: `function_definition`, `class_definition`
+- Go: `function_declaration`, `method_declaration`, `type_declaration`
+- Rust: `function_item`, `impl_item`, `struct_item`, `enum_item`
+- CSS: `rule_set`, `media_statement`, `keyframes_statement`
+- C/C++/Java/Kotlin: `function_definition`, `struct_specifier`, `class_specifier`, `class_declaration`, `interface_declaration`
+
+Body hashing: SHA-256 of whitespace-normalized subtree text (first 16 hex chars).
+
+Rename similarity: Jaccard similarity on whitespace-split token sets; threshold >0.8.
+
+### Structural Diff — Grammar Source
+
+Use `tree-sitter-wasms` npm package for pre-built WASM files. Local `grammars/` directory as an override/supplement for custom grammars.
+
+---
+
 ## Tech Choices
 
 | Concern | Choice | Rationale |
 |---------|--------|-----------|
+| Stack | React 18, Express, TypeScript, Vite | Existing project stack |
 | Tree-sitter runtime | `web-tree-sitter` (WASM) | No native compilation; works everywhere Node runs |
-| Grammar storage | Bundled `.wasm` files | Self-contained package, no runtime downloads |
+| Grammar source | `tree-sitter-wasms` + local `grammars/` | Pre-built for all major languages, local override for custom |
 | File tree | Custom component | File count in PRs is small; no virtualization needed |
 | Syntax grammars | `refractor` (existing) | Already in use, just needs registration |
