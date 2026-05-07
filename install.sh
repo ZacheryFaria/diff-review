@@ -18,4 +18,10 @@ TARGET="$(pwd)/bin/diff-review.js"
 chmod +x "$TARGET"
 ln -sf "$TARGET" "$LINK"
 echo "Linked: $LINK -> $TARGET"
+
+SKILL_DIR="${HOME}/.claude/skills/diff-review"
+mkdir -p "$SKILL_DIR"
+cp "$(pwd)/SKILL.md" "$SKILL_DIR/SKILL.md"
+echo "Installed Claude skill: $SKILL_DIR/SKILL.md"
+
 echo "Done! Run 'diff-review' from any git repo."
