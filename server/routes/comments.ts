@@ -1,6 +1,6 @@
 import { Router, IRouter } from "express";
 import { createHash, randomBytes } from "crypto";
-import { resolveRef, getDiff, getMergeBase } from "../git.js";
+import { resolveRef, getDiff, getMergeBase, getFileAtRef } from "../git.js";
 import { Storage } from "../storage.js";
 
 export const commentsRouter: IRouter = Router();
@@ -87,8 +87,17 @@ commentsRouter.post("/comments", async (req, res) => {
       const nextFile = diffText.indexOf("\ndiff --git", fileStart + 1);
       const fileDiff = nextFile === -1 ? diffText.slice(fileStart) : diffText.slice(fileStart, nextFile);
       hunkHash = createHash("sha256").update(fileDiff).digest("hex").slice(0, 16);
-      const lines = fileDiff.split("\n");
-      context = lines.filter(l => l.startsWith("+") || l.startsWith("-")).slice(0, 10);
+    }
+
+    if (startLine > 0) {
+      const ref = side === "old" ? mergeBase : head;
+      try {
+        const fileContent = await getFileAtRef(repoDir, ref, file);
+        const fileLines = fileContent.split("\n");
+        context = fileLines.slice(startLine - 1, endLine);
+      } catch {
+        // file may not exist at ref (e.g. new file on old side)
+      }
     }
 
     const now = new Date().toISOString();
