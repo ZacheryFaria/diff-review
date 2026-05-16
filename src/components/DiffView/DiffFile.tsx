@@ -183,8 +183,10 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
       const startLine = Math.min(lastClickedLine.line, line);
       const endLine = Math.max(lastClickedLine.line, line);
       setPendingComment({ file: fileName, startLine, endLine, side: side_ });
-    } else {
+    } else if (lastClickedLine && lastClickedLine.line === line && lastClickedLine.side === side_) {
       setPendingComment({ file: fileName, startLine: line, endLine: line, side: side_ });
+    } else {
+      setPendingComment(null);
       setLastClickedLine({ line, side: side_ });
     }
   };

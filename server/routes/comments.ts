@@ -94,7 +94,10 @@ commentsRouter.post("/comments", async (req, res) => {
       try {
         const fileContent = await getFileAtRef(repoDir, ref, file);
         const fileLines = fileContent.split("\n");
-        context = fileLines.slice(startLine - 1, endLine);
+        const commentLines = endLine - startLine + 1;
+        const leadingLines = Math.max(0, 5 - commentLines);
+        const contextStart = Math.max(0, startLine - 1 - leadingLines);
+        context = fileLines.slice(contextStart, endLine);
       } catch {
         // file may not exist at ref (e.g. new file on old side)
       }
