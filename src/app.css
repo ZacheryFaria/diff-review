@@ -162,6 +162,14 @@ table.diff colgroup {
   opacity: 0.3;
 }
 
+.diff-gutter-selected {
+  background: rgba(88, 166, 255, 0.25) !important;
+}
+
+.diff-code-selected {
+  background: rgba(88, 166, 255, 0.1) !important;
+}
+
 .diff-widget {
   background: transparent;
 }

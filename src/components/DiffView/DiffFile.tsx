@@ -229,6 +229,18 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
     };
   }, [structuralLineSets]);
 
+  const selectedChanges = useMemo(() => {
+    const sel = pendingComment ?? (lastClickedLine ? { startLine: lastClickedLine.line, endLine: lastClickedLine.line, side: lastClickedLine.side } : null);
+    if (!sel) return [];
+    const allChanges = hunks.flatMap(h => h.changes);
+    const keys: string[] = [];
+    for (let line = sel.startLine; line <= sel.endLine; line++) {
+      const change = findChangeForLine(allChanges, line, sel.side);
+      if (change) keys.push(getChangeKey(change));
+    }
+    return keys;
+  }, [hunks, pendingComment, lastClickedLine]);
+
   const widgets = buildWidgets(
     hunks,
     lineLevelComments,
@@ -399,6 +411,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
             hunks={hunks}
             tokens={tokens ?? null}
             widgets={widgets}
+            selectedChanges={selectedChanges}
             generateLineClassName={generateLineClassName}
             gutterEvents={{ onClick: (info: any, e: any) => handleGutterClick(info, e) }}
           >
