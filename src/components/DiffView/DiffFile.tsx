@@ -24,6 +24,7 @@ interface DiffFileProps {
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string, body: string) => void;
   reviewedState?: ReviewedFileState;
   onMarkReviewed: () => Promise<void>;
   onUnmarkReviewed: () => Promise<void>;
@@ -55,7 +56,8 @@ function buildWidgets(
   onCancel: () => void,
   onResolve: (id: string) => void,
   onReopen: (id: string) => void,
-  onDelete: (id: string) => void
+  onDelete: (id: string) => void,
+  onEdit: (id: string, body: string) => void
 ): Record<string, ReactNode> {
   const widgets: Record<string, ReactNode> = {};
   const allChanges = hunks.flatMap(h => h.changes);
@@ -74,6 +76,7 @@ function buildWidgets(
             onResolve={onResolve}
             onReopen={onReopen}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         </div>
       );
@@ -124,7 +127,7 @@ function isStructuralOnlyChange(change: ChangeData, oldLines: Set<number>, newLi
   return oldLines.has(oldLn) || newLines.has(newLn);
 }
 
-export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, reviewedState, onMarkReviewed, onUnmarkReviewed, base, head }: DiffFileProps) {
+export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve, onReopen, onDelete, onEdit, reviewedState, onMarkReviewed, onUnmarkReviewed, base, head }: DiffFileProps) {
   const { type, hunks, oldPath, newPath } = fileData;
   const fileName = newPath || oldPath || "unknown";
   const language = getLanguage(fileName);
@@ -249,7 +252,8 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
     handleCancel,
     onResolve,
     onReopen,
-    onDelete
+    onDelete,
+    onEdit
   );
 
   const handleReviewedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -365,6 +369,7 @@ export function DiffFile({ fileData, viewType, comments, onAddComment, onResolve
               onResolve={onResolve}
               onReopen={onReopen}
               onDelete={onDelete}
+              onEdit={onEdit}
             />
           ))}
           {showFileCommentInput && (

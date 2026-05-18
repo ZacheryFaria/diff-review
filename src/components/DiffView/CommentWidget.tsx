@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Comment } from "../../types/schema";
 
 type Freshness = "fresh" | "stale" | "orphaned";
@@ -8,10 +9,24 @@ interface CommentWidgetProps {
   onResolve: (id: string) => void;
   onReopen: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (id: string, body: string) => void;
 }
 
-export function CommentWidget({ comment, freshness, onResolve, onReopen, onDelete }: CommentWidgetProps) {
+export function CommentWidget({ comment, freshness, onResolve, onReopen, onDelete, onEdit }: CommentWidgetProps) {
   const isResolved = comment.status === "resolved";
+  const [editing, setEditing] = useState(false);
+  const [editBody, setEditBody] = useState(comment.body);
+
+  const handleSave = () => {
+    onEdit(comment.id, editBody);
+    setEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditBody(comment.body);
+    setEditing(false);
+  };
+
   return (
     <div style={{
       padding: 12,
@@ -82,11 +97,45 @@ export function CommentWidget({ comment, freshness, onResolve, onReopen, onDelet
           {comment.anchor.context.join("\n")}
         </pre>
       )}
-      <div style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{comment.body}</div>
+      {editing ? (
+        <div>
+          <textarea
+            value={editBody}
+            onChange={e => setEditBody(e.target.value)}
+            style={{
+              width: "100%",
+              minHeight: 60,
+              fontSize: 13,
+              fontFamily: "inherit",
+              background: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              padding: 8,
+              resize: "vertical",
+            }}
+          />
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            <button onClick={handleSave} style={{ padding: "3px 10px", fontSize: 11, cursor: "pointer", borderRadius: 4, border: "1px solid var(--border)", background: "var(--accent)", color: "white" }}>
+              Save
+            </button>
+            <button onClick={handleCancel} style={{ padding: "3px 10px", fontSize: 11, cursor: "pointer", borderRadius: 4, border: "1px solid var(--border)", background: "transparent", color: "var(--text-primary)" }}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, whiteSpace: "pre-wrap" }}>{comment.body}</div>
+      )}
       <div style={{ display: "flex", gap: 8, marginTop: 8, fontSize: 11, color: "var(--text-secondary)" }}>
         <span>L{comment.startLine}{comment.endLine !== comment.startLine ? `-${comment.endLine}` : ""}</span>
         <span>{comment.side}</span>
         <span style={{ flex: 1 }} />
+        {!editing && (
+          <button onClick={() => { setEditBody(comment.body); setEditing(true); }} style={{ background: "none", border: "none", color: "var(--text-link)", cursor: "pointer", fontSize: 11 }}>
+            Edit
+          </button>
+        )}
         {isResolved ? (
           <button onClick={() => onReopen(comment.id)} style={{ background: "none", border: "none", color: "var(--text-link)", cursor: "pointer", fontSize: 11 }}>
             Reopen

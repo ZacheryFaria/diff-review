@@ -101,6 +101,19 @@ export function useDeleteCommentMutation(base: string, head: string) {
   });
 }
 
+export function useEditCommentMutation(base: string, head: string) {
+  const queryClient = useQueryClient();
+  const key = reviewKeys.comments(base, head);
+
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: string }) =>
+      api.updateComment(id, { base, head, body }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
 export function useMarkReviewedMutation(base: string, head: string) {
   const queryClient = useQueryClient();
   const key = reviewKeys.comments(base, head);

@@ -13,6 +13,7 @@ import {
   useResolveCommentMutation,
   useReopenCommentMutation,
   useDeleteCommentMutation,
+  useEditCommentMutation,
   usePreferencesQuery,
   useAddIgnorePatternMutation,
   useRemoveIgnorePatternMutation,
@@ -44,6 +45,7 @@ export function App() {
   const resolveCommentMutation = useResolveCommentMutation(base, head);
   const reopenCommentMutation = useReopenCommentMutation(base, head);
   const deleteCommentMutation = useDeleteCommentMutation(base, head);
+  const editCommentMutation = useEditCommentMutation(base, head);
   const markReviewedMutation = useMarkReviewedMutation(base, head);
   const unmarkReviewedMutation = useUnmarkReviewedMutation(base, head);
   const addPatternMutation = useAddIgnorePatternMutation();
@@ -167,6 +169,7 @@ export function App() {
               onResolve={(id) => resolveCommentMutation.mutate(id)}
               onReopen={(id) => reopenCommentMutation.mutate(id)}
               onDelete={(id) => deleteCommentMutation.mutate(id)}
+              onEdit={(id, body) => editCommentMutation.mutate({ id, body })}
               reviewedFiles={reviewedFiles}
               onMarkReviewed={(file) => markReviewedMutation.mutateAsync(file)}
               onUnmarkReviewed={(file) => unmarkReviewedMutation.mutateAsync(file)}
